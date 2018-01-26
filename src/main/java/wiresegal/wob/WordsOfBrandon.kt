@@ -10,6 +10,7 @@ import org.jsoup.select.Elements
 import org.jsoup.select.Evaluator
 import org.jsoup.select.Evaluator.*
 import java.awt.Color
+import java.net.URI
 
 /**
  * @author WireSegal
@@ -91,7 +92,7 @@ fun backupEmbed(title: String, url: String): EmbedBuilder {
 val masterUrl = "https://wob.coppermind.net/adv_search/?ordering=rank&query="
 
 fun harvestFromSearch(terms: List<String>): List<EmbedBuilder> {
-    val baseUrl = masterUrl + terms.joinToString("+") + "&page="
+    val baseUrl = masterUrl + terms.joinToString("+") { URI(it).toASCIIString() } + "&page="
     val allArticles = mutableListOf<Element>()
     val allEmbeds = mutableListOf<EmbedBuilder>()
 
@@ -148,8 +149,13 @@ fun main(args: Array<String>) {
                     }
 
                     if (allWobs.none()) {
-                        val allSearchTerms = "\"([\\w\\s+,]+)\"".toRegex().findAll(message.content).toList()
-                                .flatMap { it.groupValues[1].split("[\\s+,]".toRegex()) }.filter { it.isNotBlank() }
+                        val allSearchTerms = "\"([\\w\\s+,!|&]+)\"".toRegex().findAll(message.content).toList()
+                                .flatMap { it.groupValues[1]
+                                        .replace(",".toRegex(), " ")
+                                        .replace("\\s{2,}".toRegex(), " ")
+                                        .replace("(\\w)([!+|&])".toRegex(), "$1 $2")
+                                        .split("\\s".toRegex())
+                                }.filter { it.matches("[!+|&]?\\w+".toRegex()) }
                         if (allSearchTerms.any()) {
                             val myMessage = message.channel.sendMessage("Searching for \"${allSearchTerms.joinToString()}\"...")
                             val terms = allSearchTerms.toList()
