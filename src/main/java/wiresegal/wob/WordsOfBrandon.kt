@@ -58,7 +58,7 @@ fun embedFromContent(title: String, url: String, article: Element): EmbedBuilder
             if (lines.isNotEmpty()) {
                 var str = lines.joinToString("\n").replace("\\s{2,}".toRegex(), " ")
                 if (str.length > 1024) str = str.substring(0, 1000)
-                        .replace("\\w+$".toRegex(), "").trim() + " … (Check Arcanum for more.)"
+                        .replace("\\w+$".toRegex(), "").trim() + " *… (Check Arcanum for more.)*"
 
                 fields.add(lastSpeaker to str)
                 lines.clear()
@@ -78,7 +78,7 @@ fun embedFromContent(title: String, url: String, article: Element): EmbedBuilder
     if (lines.isNotEmpty()) {
         var str = lines.joinToString("\n").replace("\\s{2,}".toRegex(), " ")
         if (str.length > 1024) str = str.substring(0, 1000)
-                .replace("\\w+$".toRegex(), "").trim()  + " … (Check Arcanum for more.)"
+                .replace("\\w+$".toRegex(), "").trim()  + " *… (Check Arcanum for more.)*"
 
         fields.add(lastSpeaker to str)
     }
