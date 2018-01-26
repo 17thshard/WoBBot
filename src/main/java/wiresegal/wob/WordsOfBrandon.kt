@@ -155,11 +155,11 @@ fun main(args: Array<String>) {
                                         .split("[\\s,]+".toRegex())
                                 }.filter { it.matches("[!+|&]*\\w+".toRegex()) }
                         if (allSearchTerms.any()) async {
-                            val myMessage = message.channel.sendMessage("Searching for \"${allSearchTerms.joinToString()}\"...")
+                            val myMessage = message.channel.sendMessage("Searching for \"${allSearchTerms.joinToString().replace("&!", "!")}\"...")
                             val terms = allSearchTerms.toList()
                             val allEmbeds = harvestFromSearch(terms)
                             if (allEmbeds.isEmpty())
-                                myMessage.get().edit("Couldn't find any WoBs for \"${terms.joinToString()}\".")
+                                myMessage.get().edit("Couldn't find any WoBs for \"${terms.joinToString().replace("&!", "!")}\".")
                             else {
                                 val search = myMessage.get()
                                 search.edit("", allEmbeds.first())
