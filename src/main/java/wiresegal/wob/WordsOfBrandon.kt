@@ -1,5 +1,6 @@
 package wiresegal.wob
 
+import com.fasterxml.jackson.databind.node.ObjectNode
 import de.btobastian.javacord.DiscordApi
 import de.btobastian.javacord.DiscordApiBuilder
 import de.btobastian.javacord.entities.message.Message
@@ -50,13 +51,16 @@ fun embedFromContent(title: String, url: String, article: Element): EmbedBuilder
     if (footnote != null)
         embed.setFooter(footnote.text())
 
+    val fields = mutableListOf<Pair<String, String>>()
+
     for (child in content.children()) {
         if (child.hasClass("entry-speaker")) {
             if (lines.isNotEmpty()) {
-                val str = lines.joinToString("\n").replace("\\s{2,}".toRegex(), " ")
-                if (str.length > 1024) return backupEmbed(title, url)
+                var str = lines.joinToString("\n").replace("\\s{2,}".toRegex(), " ")
+                if (str.length > 1024) str = str.substring(0, 1000)
+                        .replace("\\w+$".toRegex(), "").trim() + " … (Check Arcanum for more.)"
 
-                embed.addField(lastSpeaker, str, false)
+                fields.add(lastSpeaker to str)
                 lines.clear()
             }
             lastSpeaker = child.text()
@@ -68,17 +72,35 @@ fun embedFromContent(title: String, url: String, article: Element): EmbedBuilder
             lines.add(child.text())
     }
 
-    if (lines.isNotEmpty()) {
-        val str = lines.joinToString("\n").replace("\\s{2,}".toRegex(), " ")
-        if (str.length > 1024) return backupEmbed(title, url)
-
-        embed.addField(lastSpeaker, str, false)
-    }
-
     if (pending)
         embed.setDescription("__**Pending Review**__")
 
-    if (embed.toJsonNode().toString().length > 2000) return backupEmbed(title, url)
+    if (lines.isNotEmpty()) {
+        var str = lines.joinToString("\n").replace("\\s{2,}".toRegex(), " ")
+        if (str.length > 1024) str = str.substring(0, 1000)
+                .replace("\\w+$".toRegex(), "").trim()  + " … (Check Arcanum for more.)"
+
+        fields.add(lastSpeaker to str)
+    }
+
+    var lastJson = embed.toJsonNode()
+    for ((author, comment) in fields) {
+        embed.addField(author, comment, false)
+        val newJson = embed.toJsonNode()
+        if (newJson.toString().length > 1950) {
+            val footer = lastJson.putObject("footer")
+            footer.put("text", "(Too long to display. Check Arcanum for more.)")
+            return object : EmbedBuilder() {
+                override fun toJsonNode(`object`: ObjectNode): ObjectNode {
+                    return `object`.setAll(lastJson) as ObjectNode
+                }
+            }
+        }
+        lastJson = newJson
+    }
+
+    if (embed.toJsonNode().toString().length > 2000)
+        return backupEmbed(title, url)
 
     return embed
 }
@@ -154,24 +176,22 @@ fun main(args: Array<String>) {
                                         .split("[\\s,]+".toRegex())
                                 }.filter { it.matches("[!+|&\\w]+".toRegex()) }
                         if (allSearchTerms.any()) async {
-                            val myMessage = message.channel.sendMessage("Searching for \"${allSearchTerms.joinToString().replace("&!", "!")}\"...")
-                            val typing = message.channel.typeContinuously()
+                            val waiting = message.channel.sendMessage("Searching for \"${allSearchTerms.joinToString().replace("&!", "!")}\"...").get()
                             val terms = allSearchTerms.toList()
+                            message.channel.type()
                             val allEmbeds = harvestFromSearch(terms)
-                            if (allEmbeds.isEmpty()) {
-                                myMessage.get().edit("Couldn't find any WoBs for \"${terms.joinToString().replace("&!", "!")}\".")
-                                typing.close()
-                            } else {
-                                val search = myMessage.get()
-                                search.edit("", allEmbeds.first())
+                            if (allEmbeds.isEmpty())
+                                message.channel.sendMessage("Couldn't find any WoBs for \"${terms.joinToString().replace("&!", "!")}\".")
+                            else {
+                                val search = message.channel.sendMessage("", allEmbeds.first()).get()
                                 if (allEmbeds.size > 1)
                                     search.addReaction(arrowLeft)
                                 search.addReaction(done)
                                 if (allEmbeds.size > 1)
                                     search.addReaction(arrowRight)
                                 messagesWithEmbedLists.put(search.id, Triple(message.author.id, 0, allEmbeds))
-                                typing.close()
                             }
+                            waiting.delete()
                         }
                     }
                 }
