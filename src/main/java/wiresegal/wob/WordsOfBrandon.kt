@@ -153,7 +153,7 @@ fun main(args: Array<String>) {
                                         .replace("(\\w)([!+|&])".toRegex(), "$1 $2")
                                         .replace("([^&])!".toRegex(), "$1&!")
                                         .split("[\\s,]+".toRegex())
-                                }.filter { it.matches("[!+|&]?\\w+".toRegex()) }
+                                }.filter { it.matches("[!+|&]*\\w+".toRegex()) }
                         if (allSearchTerms.any()) async {
                             val myMessage = message.channel.sendMessage("Searching for \"${allSearchTerms.joinToString()}\"...")
                             val terms = allSearchTerms.toList()
