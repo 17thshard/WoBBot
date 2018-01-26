@@ -149,7 +149,7 @@ fun main(args: Array<String>) {
                                 myMessage.get().edit("Couldn't find any WoBs for \"${terms.joinToString()}\".")
                             else {
                                 val search = myMessage.get()
-                                search.edit(allEmbeds.first())
+                                search.edit("", allEmbeds.first())
                                 search.addReaction(arrowLeft)
                                 search.addReaction(done)
                                 search.addReaction(arrowRight)
