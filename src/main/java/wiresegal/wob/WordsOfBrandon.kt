@@ -52,7 +52,10 @@ fun embedFromContent(title: String, url: String, article: Element): EmbedBuilder
     for (child in content.children()) {
         if (child.hasClass("entry-speaker")) {
             if (lines.isNotEmpty()) {
-                embed.addField(lastSpeaker, lines.joinToString("\n"), false)
+                val str = lines.joinToString("\n").replace("\\s{2,}".toRegex(), " ")
+                if (str.length > 1024) return backupEmbed(title, url)
+
+                embed.addField(lastSpeaker, str, false)
                 lines.clear()
             }
             lastSpeaker = child.text()
@@ -64,19 +67,25 @@ fun embedFromContent(title: String, url: String, article: Element): EmbedBuilder
             lines.add(child.text())
     }
 
-    if (lines.isNotEmpty())
-        embed.addField(lastSpeaker, lines.joinToString("\n"), false)
+    if (lines.isNotEmpty()) {
+        val str = lines.joinToString("\n").replace("\\s{2,}".toRegex(), " ")
+        if (str.length > 1024) return backupEmbed(title, url)
+
+        embed.addField(lastSpeaker, str, false)
+    }
 
     if (pending)
         embed.setDescription("**Pending Review**")
 
-    if (embed.toJsonNode().toString().length > 2000) {
-        val backup = EmbedBuilder().setColor(arcanumColor).setTitle(title).setUrl(url).setThumbnail(iconUrl)
-        backup.setDescription("This WoB is too long. Click on the link above to see it on Arcanum.")
-        return backup
-    }
+    if (embed.toJsonNode().toString().length > 2000) return backupEmbed(title, url)
 
     return embed
+}
+
+fun backupEmbed(title: String, url: String): EmbedBuilder {
+    val backup = EmbedBuilder().setColor(arcanumColor).setTitle(title).setUrl(url).setThumbnail(iconUrl)
+    backup.setDescription("This WoB is too long. Click on the link above to see it on Arcanum.")
+    return backup
 }
 
 val masterUrl = "https://wob.coppermind.net/adv_search/?ordering=rank&query="
