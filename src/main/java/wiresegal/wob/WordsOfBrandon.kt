@@ -150,7 +150,6 @@ fun main(args: Array<String>) {
                     if (allWobs.none()) {
                         val allSearchTerms = "\"([\\w\\s,+!|&]+)\"".toRegex().findAll(message.content).toList()
                                 .flatMap { it.groupValues[1]
-                                        .replace("(\\w)([!+|&])".toRegex(), "$1 $2")
                                         .replace("([^&])!".toRegex(), "$1&!")
                                         .split("[\\s,]+".toRegex())
                                 }.filter { it.matches("[!+|&]*\\w+".toRegex()) }
