@@ -58,6 +58,7 @@ fun embedFromContent(title: String, url: String, article: Element): EmbedBuilder
     var lastLine = false
 
     for (child in content.childNodes()) {
+        var text: String? = null
         if (child is Element && child.hasClass("entry-speaker")) {
             if (lines.isNotEmpty()) {
                 val str = lines.joinToString("\n").replace("\\s{2,}".toRegex(), " ")
@@ -73,13 +74,8 @@ fun embedFromContent(title: String, url: String, article: Element): EmbedBuilder
         } else if (child is Element && child.tag().isInline) {
             var line = child.text()
 
-            if (child.tagName() == "p" || lines.isEmpty()) {
-                if (lastLine)
-                    lines[lines.size - 1] = lines.last() + line
-                else
-                    lines.add(line)
-                lastLine = false
-            } else {
+            if (child.tagName() == "p" || lines.isEmpty()) text = line
+            else {
                 when {
                     child.tagName() == "i" -> line = "_${line}_"
                     child.tagName() == "b" -> line = "**$line**"
@@ -88,20 +84,14 @@ fun embedFromContent(title: String, url: String, article: Element): EmbedBuilder
                 lines[lines.size - 1] = lines.last() + line
                 lastLine = true
             }
-        } else if (child is TextNode) {
-            val line = child.text()
+        } else if (child is Element) text = child.text()
+        else if (child is TextNode) text = child.text()
+
+        if (text != null) {
             if (lastLine)
-                lines[lines.size - 1] = lines.last() + line
+                lines[lines.size - 1] = lines.last() + text
             else
-                lines.add(line)
-            lastLine = false
-        }
-        else if (child is Element) {
-            val line = child.text()
-            if (lastLine)
-                lines[lines.size - 1] = lines.last() + line
-            else
-                lines.add(line)
+                lines.add(text)
             lastLine = false
         }
     }
