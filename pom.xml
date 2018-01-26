@@ -97,9 +97,9 @@
                 <artifactId>heroku-maven-plugin</artifactId>
                 <version>2.0.2</version>
                 <configuration>
-                    <appName>one-punch-bot</appName>
+                    <appName>wobwobwob</appName>
                     <processTypes>
-                        <run>java $JAVA_OPTS -cp target/classes:target/dependency/* eladkay.onepunchbot.Main</run>
+                        <run>java $JAVA_OPTS -cp target/classes:target/dependency/* wiresegal.wob.WordsOfBrandonKt</run>
                     </processTypes>
                 </configuration>
             </plugin>
@@ -174,6 +174,13 @@
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
             <version>1.11.2</version>
+        </dependency>
+        <dependency>
+            <groupId>de.btobastian.javacord</groupId>
+            <artifactId>javacord</artifactId>
+            <version>3.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/javacord-3.0.0-shaded.jar</systemPath>
         </dependency>
     </dependencies>
 
