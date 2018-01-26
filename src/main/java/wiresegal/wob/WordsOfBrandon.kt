@@ -102,7 +102,7 @@ fun harvestFromSearchPage(url: String, page: Int, list: MutableList<EmbedBuilder
     val allArticles = data.find(Tag("article"), Class("entry-article"))
     for (article in allArticles) {
         val title = article.find(Tag("header"), Class("entry-options")).first().find(Tag("a")).first()
-        list.add(embedFromContent(title.text(), "https://wob.coppermind.net" + title.attr("href"), article))
+        list.add(embedFromContent(title.text().removeSuffix("\"").removePrefix("\""), "https://wob.coppermind.net" + title.attr("href"), article))
     }
 
     return data.find(Class("fa-chevron-right")).isNotEmpty()
