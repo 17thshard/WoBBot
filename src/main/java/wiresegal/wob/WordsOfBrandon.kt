@@ -148,8 +148,8 @@ fun main(args: Array<String>) {
                     }
 
                     if (allWobs.none()) {
-                        val allSearchTerms = "\"([\\w\\s]+)\"".toRegex().findAll(message.content).toList()
-                                .flatMap { it.groupValues[1].split("\\s".toRegex()) }.filter { it.isNotBlank() }
+                        val allSearchTerms = "\"([\\w\\s+,]+)\"".toRegex().findAll(message.content).toList()
+                                .flatMap { it.groupValues[1].split("[\\s+,]".toRegex()) }.filter { it.isNotBlank() }
                         if (allSearchTerms.any()) {
                             val myMessage = message.channel.sendMessage("Searching for \"${allSearchTerms.joinToString()}\"...")
                             val terms = allSearchTerms.toList()
