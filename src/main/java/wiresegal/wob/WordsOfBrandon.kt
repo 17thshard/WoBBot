@@ -91,7 +91,7 @@ fun harvestFromSearch(terms: List<String>): List<EmbedBuilder> {
 
     for ((idx, article) in allArticles.withIndex()) {
         val title = article.find(Tag("header"), Class("entry-options")).first().find(Tag("a")).first()
-        val titleText = "Search: \"${terms.joinToString()}\" (${idx+1}/${allEmbeds.size}) \n" + title.text()
+        val titleText = "Search: \"${terms.joinToString()}\" (${idx+1}/${allArticles.size}) \n" + title.text()
         allEmbeds.add(embedFromContent(titleText, "https://wob.coppermind.net" + title.attr("href"), article))
     }
 
@@ -141,13 +141,15 @@ fun main(args: Array<String>) {
                     if (allWobs.none()) {
                         val allSearchTerms = "\"([\\w\\s]+)\"".toRegex().findAll(message.content).toList()
                                 .flatMap { it.groupValues[1].split("\\s".toRegex()) }
+                        val myMessage = message.channel.sendMessage("Searching for \"${allSearchTerms.joinToString()}\"...")
                         if (allSearchTerms.any()) {
                             val terms = allSearchTerms.toList()
                             val allEmbeds = harvestFromSearch(terms)
                             if (allEmbeds.isEmpty())
-                                message.channel.sendMessage("Couldn't find any WoBs for \"${terms.joinToString()}\".")
+                                myMessage.get().edit("Couldn't find any WoBs for \"${terms.joinToString()}\".")
                             else {
-                                val search = message.channel.sendMessage(allEmbeds.first()).get()
+                                val search = myMessage.get()
+                                search.edit(allEmbeds.first())
                                 search.addReaction(arrowLeft)
                                 search.addReaction(done)
                                 search.addReaction(arrowRight)
