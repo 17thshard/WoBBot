@@ -167,7 +167,7 @@ fun search(message: Message, terms: List<String>) {
         allEmbeds.size == 1 -> {
             val finalEmbed = allEmbeds.first()
             finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
-            message.channel.sendMessage("", finalEmbed).get()
+            message.channel.sendMessage("", finalEmbed)
         }
         else -> {
             val search = message.channel.sendMessage("", allEmbeds.first()).get()
