@@ -118,44 +118,44 @@ fun main(args: Array<String>) {
     api.addMessageCreateListener {
         val message = it.message
         if (!message.userAuthor.orElseGet { api.yourself }.isBot) {
-            if (message.startsWith("!wob ") || message.mentionedUsers.any { it.isYourself }) {
+            if (message.content == "!wob" || message.startsWith("!wob ") || message.mentionedUsers.any { it.isYourself }) {
                 val trimmed = message.content.replace("\\s".toRegex(), "")
                 if (trimmed == "!wob help" || trimmed == api.yourself.mentionTag + " help" ||
                         trimmed == "!wob" || trimmed == api.yourself.mentionTag) {
                     message.channel.sendMessage("Use `!wob \"term\"` to search, or put a WoB link in to get its text directly.")
-                }
+                } else {
+                    val allWobs = "wob\\.coppermind\\.net/events/[\\w-]+/#(e\\d+)".toRegex().findAll(message.content)
 
-                val allWobs = "wob\\.coppermind\\.net/events/[\\w-]+/#(e\\d+)".toRegex().findAll(message.content)
-
-                for (wob in allWobs) async {
-                    val url = "https://" + wob.value
-                    val document = Jsoup.connect(url).get()
-                    val article = document.find(Tag("article"), Id(wob.groupValues[1])).first()
-                    val details = document.find(Tag("div"), Class("eventDetails")).first()
-                    if (article != null && details != null) {
-                        val title = details.find(ContainsOwnText("Name")).last().parent().text().removePrefix("Name ")
-                        val date = details.find(ContainsOwnText("Date")).last().parent().text().removePrefix("Date ")
-                        message.channel.sendMessage(embedFromContent("$title ($date)", url, article))
-                    } else {
-                        if (article == null) println("No article?")
-                        if (details == null) println("No details?")
+                    for (wob in allWobs) async {
+                        val url = "https://" + wob.value
+                        val document = Jsoup.connect(url).get()
+                        val article = document.find(Tag("article"), Id(wob.groupValues[1])).first()
+                        val details = document.find(Tag("div"), Class("eventDetails")).first()
+                        if (article != null && details != null) {
+                            val title = details.find(ContainsOwnText("Name")).last().parent().text().removePrefix("Name ")
+                            val date = details.find(ContainsOwnText("Date")).last().parent().text().removePrefix("Date ")
+                            message.channel.sendMessage(embedFromContent("$title ($date)", url, article))
+                        } else {
+                            if (article == null) println("No article?")
+                            if (details == null) println("No details?")
+                        }
                     }
-                }
 
-                if (allWobs.none()) {
-                    val allSearchTerms = "\"([\\w\\s]+)\"".toRegex().findAll(message.content).toList()
-                            .flatMap { it.groupValues[1].split("\\s".toRegex()) }
-                    if (allSearchTerms.any()) {
-                        val terms = allSearchTerms.toList()
-                        val allEmbeds = harvestFromSearch(terms)
-                        if (allEmbeds.isEmpty())
-                            message.channel.sendMessage("Couldn't find any WoBs for \"${terms.joinToString()}\".")
-                        else {
-                            val search = message.channel.sendMessage(allEmbeds.first()).get()
-                            search.addReaction(arrowLeft)
-                            search.addReaction(done)
-                            search.addReaction(arrowRight)
-                            messagesWithEmbedLists.put(search.id, Triple(message.author.id, 0, allEmbeds))
+                    if (allWobs.none()) {
+                        val allSearchTerms = "\"([\\w\\s]+)\"".toRegex().findAll(message.content).toList()
+                                .flatMap { it.groupValues[1].split("\\s".toRegex()) }
+                        if (allSearchTerms.any()) {
+                            val terms = allSearchTerms.toList()
+                            val allEmbeds = harvestFromSearch(terms)
+                            if (allEmbeds.isEmpty())
+                                message.channel.sendMessage("Couldn't find any WoBs for \"${terms.joinToString()}\".")
+                            else {
+                                val search = message.channel.sendMessage(allEmbeds.first()).get()
+                                search.addReaction(arrowLeft)
+                                search.addReaction(done)
+                                search.addReaction(arrowRight)
+                                messagesWithEmbedLists.put(search.id, Triple(message.author.id, 0, allEmbeds))
+                            }
                         }
                     }
                 }
