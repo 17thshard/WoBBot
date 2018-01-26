@@ -155,11 +155,13 @@ fun main(args: Array<String>) {
                                 }.filter { it.matches("[!+|&\\w]+".toRegex()) }
                         if (allSearchTerms.any()) async {
                             val myMessage = message.channel.sendMessage("Searching for \"${allSearchTerms.joinToString().replace("&!", "!")}\"...")
+                            val typing = message.channel.typeContinuously()
                             val terms = allSearchTerms.toList()
                             val allEmbeds = harvestFromSearch(terms)
-                            if (allEmbeds.isEmpty())
+                            if (allEmbeds.isEmpty()) {
                                 myMessage.get().edit("Couldn't find any WoBs for \"${terms.joinToString().replace("&!", "!")}\".")
-                            else {
+                                typing.close()
+                            } else {
                                 val search = myMessage.get()
                                 search.edit("", allEmbeds.first())
                                 if (allEmbeds.size > 1)
@@ -168,6 +170,7 @@ fun main(args: Array<String>) {
                                 if (allEmbeds.size > 1)
                                     search.addReaction(arrowRight)
                                 messagesWithEmbedLists.put(search.id, Triple(message.author.id, 0, allEmbeds))
+                                typing.close()
                             }
                         }
                     }
