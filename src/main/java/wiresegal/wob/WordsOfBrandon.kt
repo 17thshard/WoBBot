@@ -152,7 +152,7 @@ fun main(args: Array<String>) {
                                 .flatMap { it.groupValues[1]
                                         .replace("([^&])!".toRegex(), "$1&!")
                                         .split("[\\s,]+".toRegex())
-                                }.filter { it.matches("[!+|&]*\\w+".toRegex()) }
+                                }.filter { it.matches("[!+|&\\w]+".toRegex()) }
                         if (allSearchTerms.any()) async {
                             val myMessage = message.channel.sendMessage("Searching for \"${allSearchTerms.joinToString().replace("&!", "!")}\"...")
                             val terms = allSearchTerms.toList()
