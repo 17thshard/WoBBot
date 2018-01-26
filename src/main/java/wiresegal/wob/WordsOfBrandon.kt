@@ -159,9 +159,11 @@ fun main(args: Array<String>) {
                             else {
                                 val search = myMessage.get()
                                 search.edit("", allEmbeds.first())
-                                search.addReaction(arrowLeft)
+                                if (allEmbeds.size > 1)
+                                    search.addReaction(arrowLeft)
                                 search.addReaction(done)
-                                search.addReaction(arrowRight)
+                                if (allEmbeds.size > 1)
+                                    search.addReaction(arrowRight)
                                 messagesWithEmbedLists.put(search.id, Triple(message.author.id, 0, allEmbeds))
                             }
                         }
