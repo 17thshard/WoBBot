@@ -11,6 +11,13 @@
         <kotlin.version>1.2.10</kotlin.version>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+
     <build>
         <plugins>
             <plugin>
@@ -145,21 +152,6 @@
             <version>${kotlin.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-stdlib-jre8</artifactId>
-            <version>${kotlin.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-stdlib-jre8</artifactId>
-            <version>${kotlin.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-stdlib-jre8</artifactId>
-            <version>${kotlin.version}</version>
-        </dependency>
-        <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>2.8.0</version>
@@ -176,11 +168,10 @@
             <version>1.11.2</version>
         </dependency>
         <dependency>
-            <groupId>de.btobastian.javacord</groupId>
-            <artifactId>javacord</artifactId>
-            <version>3.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/libs/javacord-3.0.0-shaded.jar</systemPath>
+            <groupId>de.btobastian</groupId>
+            <artifactId>Javacord</artifactId>
+            <!-- See below what to insert here -->
+            <version>548f43d</version>
         </dependency>
     </dependencies>
 
