@@ -149,11 +149,10 @@ fun main(args: Array<String>) {
                     }
 
                     if (allWobs.none()) {
-                        val allSearchTerms = "\"([\\w\\s+,!|&]+)\"".toRegex().findAll(message.content).toList()
+                        val allSearchTerms = "\"([\\w\\s,+!|&]+)\"".toRegex().findAll(message.content).toList()
                                 .flatMap { it.groupValues[1]
-                                        .replace(",".toRegex(), " ")
-                                        .replace("\\s{2,}".toRegex(), " ")
                                         .replace("(\\w)([!+|&])".toRegex(), "$1 $2")
+                                        .replace("[\\s,]+".toRegex(), " ")
                                         .split("\\s".toRegex())
                                 }.filter { it.matches("[!+|&]?\\w+".toRegex()) }
                         if (allSearchTerms.any()) {
