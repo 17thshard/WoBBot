@@ -119,7 +119,9 @@ fun main(args: Array<String>) {
         val message = it.message
         if (!message.userAuthor.orElseGet { api.yourself }.isBot) {
             if (message.startsWith("!wob ") || message.mentionedUsers.any { it.isYourself }) {
-                if (message.content == "!wob help" || message.content == api.yourself.mentionTag + " help") {
+                val trimmed = message.content.replace("\\s".toRegex(), "")
+                if (trimmed == "!wob help" || trimmed == api.yourself.mentionTag + " help" ||
+                        trimmed == "!wob" || trimmed == api.yourself.mentionTag) {
                     message.channel.sendMessage("Use `!wob \"term\"` to search, or put a WoB link in to get its text directly.")
                 }
 
