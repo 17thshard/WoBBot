@@ -5,8 +5,10 @@ import de.btobastian.javacord.DiscordApi
 import de.btobastian.javacord.DiscordApiBuilder
 import de.btobastian.javacord.entities.message.Message
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder
+import de.btobastian.javacord.exceptions.DiscordException
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
+import org.jsoup.nodes.TextNode
 import org.jsoup.select.Elements
 import org.jsoup.select.Evaluator
 import org.jsoup.select.Evaluator.*
@@ -53,38 +55,72 @@ fun embedFromContent(title: String, url: String, article: Element): EmbedBuilder
 
     val fields = mutableListOf<Pair<String, String>>()
 
-    for (child in content.children()) {
-        if (child.hasClass("entry-speaker")) {
-            if (lines.isNotEmpty()) {
-                var str = lines.joinToString("\n").replace("\\s{2,}".toRegex(), " ")
-                if (str.length > 1024) str = str.substring(0, 1000)
-                        .replace("\\w+$".toRegex(), "").trim() + " *… (Check Arcanum for more.)*"
+    var lastLine = false
 
+    for (child in content.childNodes()) {
+        if (child is Element && child.hasClass("entry-speaker")) {
+            if (lines.isNotEmpty()) {
+                val str = lines.joinToString("\n").replace("\\s{2,}".toRegex(), " ")
                 fields.add(lastSpeaker to str)
                 lines.clear()
             }
+            lastLine = false
             lastSpeaker = child.text()
             if (lastSpeaker.contains("[PENDING REVIEW]")) {
                 pending = true
                 lastSpeaker = lastSpeaker.replace("[PENDING REVIEW]", "").trim()
             }
-        } else
-            lines.add(child.text())
+        } else if (child is Element && child.tag().isInline) {
+            var line = child.text()
+
+            if (child.tagName() == "p" || lines.isEmpty()) {
+                if (lastLine)
+                    lines[lines.size - 1] = lines.last() + line
+                else
+                    lines.add(line)
+                lastLine = false
+            } else {
+                when {
+                    child.tagName() == "i" -> line = "_${line}_"
+                    child.tagName() == "b" -> line = "**$line**"
+                    child.tagName() == "u" -> line = "__${line}__"
+                }
+                lines[lines.size - 1] = lines.last() + line
+                lastLine = true
+            }
+        } else if (child is TextNode) {
+            val line = child.text()
+            if (lastLine)
+                lines[lines.size - 1] = lines.last() + line
+            else
+                lines.add(line)
+            lastLine = false
+        }
+        else if (child is Element) {
+            val line = child.text()
+            if (lastLine)
+                lines[lines.size - 1] = lines.last() + line
+            else
+                lines.add(line)
+            lastLine = false
+        }
     }
 
     if (pending)
         embed.setDescription("__**Pending Review**__")
 
     if (lines.isNotEmpty()) {
-        var str = lines.joinToString("\n").replace("\\s{2,}".toRegex(), " ")
-        if (str.length > 1024) str = str.substring(0, 1000)
-                .replace("\\w+$".toRegex(), "").trim()  + " *… (Check Arcanum for more.)*"
-
+        val str = lines.joinToString("\n").replace("\\s{2,}".toRegex(), " ")
         fields.add(lastSpeaker to str)
     }
 
     var lastJson = embed.toJsonNode()
-    for ((author, comment) in fields) {
+    for ((author, comment) in fields.filter { it.second.isNotBlank() }
+            .map { (author, comment) ->
+        if (comment.length > 1024) author to comment.substring(0, 1000)
+                .replace("\\w+$".toRegex(), "").trim() + " *… (Check Arcanum for more.)*"
+        else author to comment
+    }) {
         embed.addField(author, comment, false)
         val newJson = embed.toJsonNode()
         if (newJson.toString().length > 1950) {
@@ -160,33 +196,39 @@ fun updateMessageWithJump(jump: Int, message: Message, entry: Triple<Long, Int, 
 
 fun search(message: Message, terms: List<String>) {
     val waiting = message.channel.sendMessage("Searching for \"${terms.joinToString().replace("&!", "!")}\"...").get()
-    message.channel.type()
+    val type = message.channel.typeContinuously()
     val allEmbeds = harvestFromSearch(terms)
-    when {
-        allEmbeds.isEmpty() -> message.channel.sendMessage("Couldn't find any WoBs for \"${terms.joinToString().replace("&!", "!")}\".")
-        allEmbeds.size == 1 -> {
-            val finalEmbed = allEmbeds.first()
-            finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
-            message.channel.sendMessage("", finalEmbed)
-        }
-        else -> {
-            val search = message.channel.sendMessage("", allEmbeds.first()).get()
-            if (allEmbeds.size > 2)
-                search.addReaction(first)
-            if (allEmbeds.size > 10)
-                search.addReaction(jumpLeft)
-            search.addReaction(arrowLeft)
-            search.addReaction(done)
-            search.addReaction(arrowRight)
-            if (allEmbeds.size > 10)
-                search.addReaction(jumpRight)
-            if (allEmbeds.size > 2)
-                search.addReaction(last)
+    type.close()
 
-            messagesWithEmbedLists.put(search.id, Triple(message.author.id, 0, allEmbeds))
+    try {
+        when {
+            allEmbeds.isEmpty() -> message.channel.sendMessage("Couldn't find any WoBs for \"${terms.joinToString().replace("&!", "!")}\".")
+            allEmbeds.size == 1 -> {
+                val finalEmbed = allEmbeds.first()
+                finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
+                message.channel.sendMessage("", finalEmbed)
+            }
+            else -> {
+                val search = message.channel.sendMessage("", allEmbeds.first()).get()
+                if (allEmbeds.size > 2)
+                    search.addReaction(first)
+                if (allEmbeds.size > 10)
+                    search.addReaction(jumpLeft)
+                search.addReaction(arrowLeft)
+                search.addReaction(done)
+                search.addReaction(arrowRight)
+                if (allEmbeds.size > 10)
+                    search.addReaction(jumpRight)
+                if (allEmbeds.size > 2)
+                    search.addReaction(last)
+
+                messagesWithEmbedLists.put(search.id, Triple(message.author.id, 0, allEmbeds))
+            }
         }
+        waiting.delete()
+    } catch (e: DiscordException) {
+        message.channel.sendMessage("An error occurred trying to look up the WoB.")
     }
-    waiting.delete()
 }
 
 fun main(args: Array<String>) {
