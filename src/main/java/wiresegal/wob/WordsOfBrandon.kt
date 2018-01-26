@@ -75,7 +75,7 @@ fun embedFromContent(title: String, url: String, article: Element): EmbedBuilder
     }
 
     if (pending)
-        embed.setDescription("**Pending Review**")
+        embed.setDescription("__**Pending Review**__")
 
     if (embed.toJsonNode().toString().length > 2000) return backupEmbed(title, url)
 
