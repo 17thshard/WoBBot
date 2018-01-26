@@ -139,8 +139,55 @@ fun harvestFromSearchPage(url: String, page: Int, list: MutableList<Element>): B
 val arrowLeft = "⬅"
 val arrowRight = "➡"
 val done = "\u23F9"
+val last = "⏭"
+val first = "⏮"
+val jumpLeft = "⏪"
+val jumpRight = "⏩"
+
+val validReactions = listOf(arrowLeft, arrowRight, done, last, first, jumpLeft, jumpRight)
 
 val messagesWithEmbedLists = mutableMapOf<Long, Triple<Long, Int, List<EmbedBuilder>>>()
+
+fun updateMessageWithJump(jump: Int, message: Message, entry: Triple<Long, Int, List<EmbedBuilder>>) {
+    val (uid, index, embeds) = entry
+    val newIndex = Math.min(Math.max(index + jump, 0), embeds.size - 1)
+    if (index != newIndex) {
+        val newEmbed = embeds[newIndex]
+        message.edit(newEmbed)
+        messagesWithEmbedLists.put(message.id, Triple(uid, newIndex, embeds))
+    }
+}
+
+fun search(message: Message, terms: List<String>) {
+    val waiting = message.channel.sendMessage("Searching for \"${terms.joinToString().replace("&!", "!")}\"...").get()
+    message.channel.type()
+    val allEmbeds = harvestFromSearch(terms)
+    when {
+        allEmbeds.isEmpty() -> message.channel.sendMessage("Couldn't find any WoBs for \"${terms.joinToString().replace("&!", "!")}\".")
+        allEmbeds.size == 1 -> {
+            val finalEmbed = allEmbeds.first()
+            finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
+            message.channel.sendMessage("", finalEmbed).get()
+        }
+        else -> {
+            val search = message.channel.sendMessage("", allEmbeds.first()).get()
+            if (allEmbeds.size > 2)
+                search.addReaction(first)
+            if (allEmbeds.size > 10)
+                search.addReaction(jumpLeft)
+            search.addReaction(arrowLeft)
+            search.addReaction(done)
+            search.addReaction(arrowRight)
+            if (allEmbeds.size > 10)
+                search.addReaction(jumpRight)
+            if (allEmbeds.size > 2)
+                search.addReaction(last)
+
+            messagesWithEmbedLists.put(search.id, Triple(message.author.id, 0, allEmbeds))
+        }
+    }
+    waiting.delete()
+}
 
 fun main(args: Array<String>) {
     api.addMessageCreateListener {
@@ -163,35 +210,17 @@ fun main(args: Array<String>) {
                             val title = details.find(ContainsOwnText("Name")).last().parent().text().removePrefix("Name ")
                             val date = details.find(ContainsOwnText("Date")).last().parent().text().removePrefix("Date ")
                             message.channel.sendMessage(embedFromContent("$title ($date)", url, article))
-                        } else {
-                            if (article == null) println("No article?")
-                            if (details == null) println("No details?")
                         }
                     }
 
                     if (allWobs.none()) {
-                        val allSearchTerms = "\"([\\w\\s,+!|&]+)\"".toRegex().findAll(message.content).toList()
+                        val terms = "\"([\\w\\s,+!|&]+)\"".toRegex().findAll(message.content).toList()
                                 .flatMap { it.groupValues[1]
                                         .replace("([^&])!".toRegex(), "$1&!")
                                         .split("[\\s,]+".toRegex())
                                 }.filter { it.matches("[!+|&\\w]+".toRegex()) }
-                        if (allSearchTerms.any()) async {
-                            val waiting = message.channel.sendMessage("Searching for \"${allSearchTerms.joinToString().replace("&!", "!")}\"...").get()
-                            val terms = allSearchTerms.toList()
-                            message.channel.type()
-                            val allEmbeds = harvestFromSearch(terms)
-                            if (allEmbeds.isEmpty())
-                                message.channel.sendMessage("Couldn't find any WoBs for \"${terms.joinToString().replace("&!", "!")}\".")
-                            else {
-                                val search = message.channel.sendMessage("", allEmbeds.first()).get()
-                                if (allEmbeds.size > 1)
-                                    search.addReaction(arrowLeft)
-                                search.addReaction(done)
-                                if (allEmbeds.size > 1)
-                                    search.addReaction(arrowRight)
-                                messagesWithEmbedLists.put(search.id, Triple(message.author.id, 0, allEmbeds))
-                            }
-                            waiting.delete()
+                        if (terms.any()) async {
+                            search(message, terms)
                         }
                     }
                 }
@@ -203,31 +232,25 @@ fun main(args: Array<String>) {
         val reaction = it.reaction.get()
         if (reaction.emoji.isUnicodeEmoji) {
             val unicode = reaction.emoji.asUnicodeEmoji().get()
-            if (!it.user.isBot && (unicode == arrowLeft || unicode == arrowRight || unicode == done)) {
+            if (!it.user.isBot && unicode in validReactions) {
                 val messageValue = messagesWithEmbedLists[message.id]
                 if (messageValue != null) {
                     val (uid, index, embeds) = messageValue
                     if (uid == it.user.id) {
-                        if (unicode == arrowLeft) {
-                            val newIndex = Math.max(index - 1, 0)
-                            if (index != newIndex) {
-                                val newEmbed = embeds[newIndex]
-                                message.edit(newEmbed)
-                                messagesWithEmbedLists.put(message.id, Triple(uid, newIndex, embeds))
+                        when (unicode) {
+                            arrowLeft -> updateMessageWithJump(-1, message, messageValue)
+                            jumpLeft -> updateMessageWithJump(-10, message, messageValue)
+                            first -> updateMessageWithJump(-embeds.size, message, messageValue)
+                            arrowRight -> updateMessageWithJump(1, message, messageValue)
+                            jumpRight -> updateMessageWithJump(10, message, messageValue)
+                            last -> updateMessageWithJump(embeds.size, message, messageValue)
+                            done -> {
+                                val finalEmbed = embeds[index]
+                                finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
+                                message.edit(finalEmbed)
+                                messagesWithEmbedLists.remove(message.id)
+                                message.removeAllReactions()
                             }
-                        } else if (unicode == arrowRight) {
-                            val newIndex = Math.min(index + 1, embeds.size - 1)
-                            if (index != newIndex) {
-                                val newEmbed = embeds[newIndex]
-                                message.edit(newEmbed)
-                                messagesWithEmbedLists.put(message.id, Triple(uid, newIndex, embeds))
-                            }
-                        } else if (unicode == done) {
-                            val finalEmbed = embeds[index]
-                            finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
-                            message.edit(finalEmbed)
-                            messagesWithEmbedLists.remove(message.id)
-                            message.removeAllReactions()
                         }
                     }
                     it.removeReaction()
