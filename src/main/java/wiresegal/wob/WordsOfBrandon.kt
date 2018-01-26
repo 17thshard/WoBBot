@@ -2,7 +2,6 @@ package wiresegal.wob
 
 import de.btobastian.javacord.DiscordApi
 import de.btobastian.javacord.DiscordApiBuilder
-import de.btobastian.javacord.entities.channels.TextChannel
 import de.btobastian.javacord.entities.message.Message
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder
 import org.jsoup.Jsoup
@@ -11,17 +10,12 @@ import org.jsoup.select.Elements
 import org.jsoup.select.Evaluator
 import org.jsoup.select.Evaluator.*
 import java.awt.Color
-import java.util.concurrent.Future
 
 /**
  * @author WireSegal
  * Created at 9:12 PM on 1/25/18.
  */
 
-fun Message.startsWith(string: String) = content.startsWith(string, ignoreCase = true)
-
-inline fun TextChannel.replyWithEmbed(color: Color? = null, content: String = "", func: EmbedBuilder.() -> Unit): Future<Message> =
-        this.sendMessage(content, EmbedBuilder().setColor(color ?: Color.getHSBColor(Math.random().toFloat(), 1f, 1f)).apply(func))
 
 // https://discordapp.com/oauth2/authorize?client_id=406271036913483796&scope=bot&permissions=8192
 
@@ -29,6 +23,9 @@ val arcanumColor = Color(0x003A52)
 val iconUrl = "https://cdn.discordapp.com/emojis/373082865073913859.png?v=1"
 
 val api: DiscordApi = DiscordApiBuilder().setToken(token).login().join()
+
+
+fun Message.startsWith(string: String) = content.startsWith(string, ignoreCase = true)
 
 fun Element.find(vararg evaluators: Evaluator) = allElements.find(*evaluators)
 
@@ -86,24 +83,24 @@ val masterUrl = "https://wob.coppermind.net/adv_search/?ordering=rank&query="
 
 fun harvestFromSearch(terms: List<String>): List<EmbedBuilder> {
     val baseUrl = masterUrl + terms.joinToString("+") + "&page="
+    val allArticles = mutableListOf<Element>()
     val allEmbeds = mutableListOf<EmbedBuilder>()
 
     var index = 0
-    while (harvestFromSearchPage(baseUrl, ++index, allEmbeds));
+    while (harvestFromSearchPage(baseUrl, ++index, allArticles));
 
-    for ((idx, embed) in allEmbeds.withIndex())
-        embed.setTitle("Search: \"${terms.joinToString()}\" (${idx+1}/${allEmbeds.size})\n" + embed.toJsonNode()["title"])
+    for ((idx, article) in allArticles.withIndex()) {
+        val title = article.find(Tag("header"), Class("entry-options")).first().find(Tag("a")).first()
+        val titleText = "Search: \"${terms.joinToString()}\" (${idx+1}/${allEmbeds.size}) \n" + title.text()
+        allEmbeds.add(embedFromContent(titleText, "https://wob.coppermind.net" + title.attr("href"), article))
+    }
 
     return allEmbeds
 }
 
-fun harvestFromSearchPage(url: String, page: Int, list: MutableList<EmbedBuilder>): Boolean {
+fun harvestFromSearchPage(url: String, page: Int, list: MutableList<Element>): Boolean {
     val data = Jsoup.connect(url + page).get()
-    val allArticles = data.find(Tag("article"), Class("entry-article"))
-    for (article in allArticles) {
-        val title = article.find(Tag("header"), Class("entry-options")).first().find(Tag("a")).first()
-        list.add(embedFromContent(title.text().removeSuffix("\"").removePrefix("\""), "https://wob.coppermind.net" + title.attr("href"), article))
-    }
+    list += data.find(Tag("article"), Class("entry-article"))
 
     return data.find(Class("fa-chevron-right")).isNotEmpty()
 }
