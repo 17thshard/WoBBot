@@ -24,7 +24,7 @@ import java.net.URLEncoder
 // https://discordapp.com/oauth2/authorize?client_id=406271036913483796&scope=bot&permissions=8192
 
 val arcanumColor = Color(0x003A52)
-val iconUrl = "https://cdn.discordapp.com/emojis/373082865073913859.png?v=1"
+const val iconUrl = "https://cdn.discordapp.com/emojis/373082865073913859.png?v=1"
 
 val api: DiscordApi = DiscordApiBuilder().setToken(token).login().join()
 
@@ -137,7 +137,7 @@ fun backupEmbed(title: String, url: String): EmbedBuilder {
     return backup
 }
 
-val masterUrl = "https://wob.coppermind.net/adv_search/?ordering=rank&query="
+const val masterUrl = "https://wob.coppermind.net/adv_search/?ordering=rank&query="
 
 fun harvestFromSearch(terms: List<String>): List<EmbedBuilder> {
     val baseUrl = masterUrl + terms.joinToString("+") { URLEncoder.encode(it, "UTF-8") } + "&page="
@@ -162,13 +162,13 @@ fun harvestFromSearchPage(url: String, page: Int, list: MutableList<Element>): B
     return data.find(Class("fa-chevron-right")).isNotEmpty()
 }
 
-val arrowLeft = "⬅"
-val arrowRight = "➡"
-val done = "\u23F9"
-val last = "⏭"
-val first = "⏮"
-val jumpLeft = "⏪"
-val jumpRight = "⏩"
+const val arrowLeft = "⬅"
+const val arrowRight = "➡"
+const val done = "\u23F9"
+const val last = "⏭"
+const val first = "⏮"
+const val jumpLeft = "⏪"
+const val jumpRight = "⏩"
 
 val validReactions = listOf(arrowLeft, arrowRight, done, last, first, jumpLeft, jumpRight)
 
@@ -246,7 +246,7 @@ fun main(args: Array<String>) {
                     }
 
                     if (allWobs.none()) {
-                        val terms = "\"([\\w\\s,+!|&]+)\"".toRegex().findAll(message.content).toList()
+                        val terms = "[\"“]([\\w\\s,+!|&]+)[\"”]".toRegex().findAll(message.content).toList()
                                 .flatMap { it.groupValues[1]
                                         .replace("([^&])!".toRegex(), "$1&!")
                                         .split("[\\s,]+".toRegex())
