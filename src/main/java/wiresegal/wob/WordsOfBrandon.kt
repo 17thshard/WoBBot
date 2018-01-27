@@ -100,7 +100,9 @@ fun embedFromContent(title: String, url: String, article: Element): EmbedBuilder
         embed.setDescription("__**Pending Review**__")
 
     if (lines.isNotEmpty()) {
-        val str = lines.joinToString("\n").replace("\\s{2,}".toRegex(), " ")
+        val str = lines
+                .joinToString("\n") { it.replace("\\s{2,}".toRegex(), " ") }
+                .replace("\n{3,}".toRegex(), "\n\n")
         fields.add(lastSpeaker to str)
     }
 
