@@ -14,6 +14,7 @@ import org.jsoup.select.Evaluator
 import org.jsoup.select.Evaluator.*
 import java.awt.Color
 import java.net.URLEncoder
+import java.util.*
 
 /**
  * @author WireSegal
@@ -227,8 +228,10 @@ fun main(args: Array<String>) {
     api.addMessageCreateListener {
         val message = it.message
         if (!message.userAuthor.orElseGet { api.yourself }.isBot) {
-            if (message.content == "!wob" || message.startsWith("!wob ") || message.mentionedUsers.any { it.isYourself }) {
-                val trimmed = message.content.replace("\\s".toRegex(), "")
+            val trimmed = message.content.replace("\\s".toRegex(), "").toLowerCase(Locale.ROOT)
+            val noChrTrimmed = trimmed.replace("\\W".toRegex(), "")
+            if (message.privateChannel.isPresent ||
+                    message.content == "!wob" || message.startsWith("!wob ") || message.mentionedUsers.any { it.isYourself }) {
                 if (trimmed == "!wobhelp" || trimmed == api.yourself.mentionTag + "help" ||
                         trimmed == "!wob" || trimmed == api.yourself.mentionTag) {
                     message.channel.sendMessage("Use `!wob \"term\"` to search, or put a WoB link in to get its text directly.")
@@ -258,9 +261,13 @@ fun main(args: Array<String>) {
                         }
                     }
                 }
-            } else if (message.content.trim() == "Say the Words!")
-                message.channel.sendMessage("**`Life before death.`**\n**`Strength before weakness.`**\n**`Journey before destination.`**")
-            else if (message.content.trim().replace("\n", " ").replace("\\s+".toRegex(), " ") == "Life before death. Strength before weakness. Journey before destination.")
+            } else if ("saythewords" in noChrTrimmed)
+                message.channel.sendMessage("**`Life before death.`**\n" +
+                        "**`Strength before weakness.`**\n" +
+                        "**`Journey before destination.`**")
+            else if ("lifebeforedeath" in noChrTrimmed &&
+                    "strengthbeforeweakness" in noChrTrimmed &&
+                    "journeybeforedestination" in noChrTrimmed)
                 message.channel.sendMessage("**`These Words are Accepted.`**")
         }
     }
