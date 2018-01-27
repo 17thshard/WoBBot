@@ -258,6 +258,8 @@ fun main(args: Array<String>) {
                 }
             } else if (message.content.trim() == "Say the Words!")
                 message.channel.sendMessage("Life before death.\nStrength before weakness.\nJourney before destination.")
+            else if (message.content.trim().replace("\n", " ").replace("\\s+".toRegex(), " ") == "Life before death. Strength before weakness. Journey before destination.")
+                message.channel.sendMessage("**`These Words are Accepted.`**")
         }
     }
     api.addReactionAddListener {
