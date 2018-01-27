@@ -251,7 +251,10 @@ fun main(args: Array<String>) {
                     }
 
                     if (allWobs.none()) {
-                        val terms = "[\"“]([\\w\\s,+!|&]+)[\"”]".toRegex().findAll(message.content).toList()
+                        val content = if (message.privateChannel.isPresent && "^[\\w\\s,+!|&]+$".toRegex().matches(message.content))
+                            "\"" + message.content + "\"" else message.content
+
+                        val terms = "[\"“]([\\w\\s,+!|&]+)[\"”]".toRegex().findAll(content).toList()
                                 .flatMap { it.groupValues[1]
                                         .replace("([^&])!".toRegex(), "$1&!")
                                         .split("[\\s,]+".toRegex())
