@@ -256,7 +256,8 @@ fun main(args: Array<String>) {
                         }
                     }
                 }
-            }
+            } else if (message.content.trim() == "Say the Words!")
+                message.channel.sendMessage("Life before death.\nStrength before weakness.\nJourney before destination.")
         }
     }
     api.addReactionAddListener {
