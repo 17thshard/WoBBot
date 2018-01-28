@@ -64,7 +64,7 @@ val rattles = arrayOf(
     "So the night will reign, for the choice of honor is life..." to "Observed circa Ishi ? 1173 by Taravangian. Subject was King Valam of Jah Keved.")
 
 val rattleEmbeds = rattles.mapIndexed { idx, (rattle, comment) -> EmbedBuilder().apply {
-    setTitle("($idx/${rattles.size})")
+    setTitle("(${idx + 1}/${rattles.size}) \nDeath Rattles")
     setColor(Color.RED)
     setDescription(rattle)
     setFooter(comment)
