@@ -63,6 +63,13 @@ val rattles = arrayOf(
     "The day was ours, but they took it. Stormfather! You cannot have it. The day is ours. They come, rasping, and the lights fail. Oh, Stormfather!" to "Collected circa Tanat ? 1173 by Taravangian. Subject was a young boy.",
     "So the night will reign, for the choice of honor is life..." to "Observed circa Ishi ? 1173 by Taravangian. Subject was King Valam of Jah Keved.")
 
+val rattleEmbeds = rattles.mapIndexed { idx, (rattle, comment) -> EmbedBuilder().apply {
+    setTitle("($idx/${rattles.size})")
+    setColor(Color.RED)
+    setDescription(rattle)
+    setFooter(comment)
+} }
+
 val api: DiscordApi = DiscordApiBuilder().setToken(token).login().join()
 
 
@@ -239,7 +246,7 @@ fun search(message: Message, terms: List<String>) {
                 message.channel.sendMessage("", finalEmbed)
             }
             else -> {
-                val search = message.channel.sendMessage("", allEmbeds.first()).get()
+                val search = message.channel.sendMessage(allEmbeds.first()).get()
                 if (allEmbeds.size > 2)
                     search.addReaction(first)
                 if (allEmbeds.size > 10)
@@ -310,13 +317,24 @@ fun main(args: Array<String>) {
                     "strengthbeforeweakness" in noChrTrimmed &&
                     "journeybeforedestination" in noChrTrimmed)
                 message.channel.sendMessage("**`These Words are Accepted.`**")
-            else if (noChrTrimmed.startsWith("consultthediagram"))
-                message.channel.sendMessage(EmbedBuilder().apply {
-                    val rattle = rattles[(Math.random() * rattles.size).toInt()]
-                    setColor(Color.RED)
-                    setDescription(rattle.first)
-                    setFooter(rattle.second)
-                })
+            else if (noChrTrimmed.startsWith("consultthediagram")) {
+                val index = (Math.random() * rattles.size).toInt()
+                val embed = message.channel.sendMessage(rattleEmbeds[index]).get()
+
+                if (rattleEmbeds.size > 2)
+                    embed.addReaction(first)
+                if (rattleEmbeds.size > 10)
+                    embed.addReaction(jumpLeft)
+                embed.addReaction(arrowLeft)
+                embed.addReaction(done)
+                embed.addReaction(arrowRight)
+                if (rattleEmbeds.size > 10)
+                    embed.addReaction(jumpRight)
+                if (rattleEmbeds.size > 2)
+                    embed.addReaction(last)
+
+                messagesWithEmbedLists[embed.id] = Triple(message.author.id, index, rattleEmbeds)
+            }
         }
     }
     api.addReactionAddListener {
