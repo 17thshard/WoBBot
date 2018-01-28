@@ -313,7 +313,6 @@ fun main(args: Array<String>) {
                 message.channel.sendMessage(EmbedBuilder().apply {
                     val rattle = rattles[(Math.random() * rattles.size).toInt()]
                     setColor(Color.RED)
-                    setTitle("Death Rattle")
                     setDescription(rattle.first)
                     setFooter(rattle.second)
                 })
