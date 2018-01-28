@@ -144,10 +144,11 @@ fun embedFromContent(title: String, url: String, article: Element): EmbedBuilder
     }
 
     var lastJson = embed.toJsonNode()
+    val arcanumSuffix = "*… (Check Arcanum for more.)*"
     for ((author, comment) in fields.filter { it.second.isNotBlank() }
             .map { (author, comment) ->
-                if (comment.length > 1024) author to comment.substring(0, 1000)
-                        .replace("\\w+$".toRegex(), "").trim() + " *… (Check Arcanum for more.)*"
+                if (comment.length > 1024) author to comment.substring(0, 1024 - arcanumSuffix.length)
+                        .replace("\\w+$".toRegex(), "").trim() + arcanumSuffix
                 else author to comment
             }) {
         embed.addField(author, comment, false)
