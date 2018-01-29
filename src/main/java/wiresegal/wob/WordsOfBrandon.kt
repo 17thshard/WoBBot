@@ -63,7 +63,7 @@ val rattles = arrayOf(
     "The day was ours, but they took it. Stormfather! You cannot have it. The day is ours. They come, rasping, and the lights fail. Oh, Stormfather!" to "Collected circa Tanat ? 1173 by Taravangian. Subject was a young boy.",
     "So the night will reign, for the choice of honor is life..." to "Observed circa Ishi ? 1173 by Taravangian. Subject was King Valam of Jah Keved.")
 
-val rattleEmbeds = rattles.mapIndexed { idx, (rattle, comment) -> EmbedBuilder().apply {
+val rattleEmbeds get() = rattles.mapIndexed { idx, (rattle, comment) -> EmbedBuilder().apply {
     setTitle("(${idx + 1}/${rattles.size}) \nDeath Rattles")
     setColor(Color.RED)
     setDescription(rattle)
@@ -71,9 +71,6 @@ val rattleEmbeds = rattles.mapIndexed { idx, (rattle, comment) -> EmbedBuilder()
 } }
 
 val api: DiscordApi = DiscordApiBuilder().setToken(token).login().join()
-
-
-fun Message.startsWith(string: String) = content.startsWith(string, ignoreCase = true)
 
 fun Element.find(vararg evaluators: Evaluator) = allElements.find(*evaluators)
 
