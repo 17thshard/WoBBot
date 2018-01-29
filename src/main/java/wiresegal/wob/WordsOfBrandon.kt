@@ -90,7 +90,7 @@ fun embedFromContent(title: String, url: String, article: Element): EmbedBuilder
     var pending = false
 
     val lines = mutableListOf<String>()
-    var lastSpeaker = "Brandon Sanderson" // Assumed
+    var lastSpeaker = "Context"
 
     val content = article.find(Tag("div"), Class("entry-content")).first()
     val footnote = article.find(Tag("small"), Class("footnote")).first()
@@ -111,6 +111,8 @@ fun embedFromContent(title: String, url: String, article: Element): EmbedBuilder
             }
             lastLine = false
             lastSpeaker = child.text()
+            if (lastSpeaker.isBlank())
+                lastSpeaker = "Context"
             if (lastSpeaker.contains("[PENDING REVIEW]")) {
                 pending = true
                 lastSpeaker = lastSpeaker.replace("[PENDING REVIEW]", "").trim()
