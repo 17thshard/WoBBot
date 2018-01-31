@@ -236,12 +236,9 @@ fun updateIndexToInput(originalMessage: Message, entry: Triple<Long, Int, List<E
     api.addMessageCreateListener{
         while (!authorReacted) async {
             val userInput = it.message
-            System.out.println("Message sent")
             if (userInput.author.id == uid) {
-                System.out.println("UID recognized")
                 val numsOnly = userInput.content.replace("[^1-9]".toRegex(), "")
                 if (numsOnly != "") {
-                    System.out.println(numsOnly)
                     val requestedIndex = numsOnly.toInt() + 1
                     val jump = index - requestedIndex
                     updateIndexWithJump(jump, originalMessage, entry)
