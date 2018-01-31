@@ -232,7 +232,7 @@ fun updateIndexWithJump(jump: Int, message: Message, entry: Triple<Long, Int, Li
 fun updateIndexToInput(originalMessage: Message, entry: Triple<Long, Int, List<EmbedBuilder>>){
     val (uid, index, embeds) = entry
     val questionMessage = originalMessage.channel.sendMessage("What number entry would you like to go to?").get()
-    api.addMessageCreateListener {
+    var myListener = api.addMessageCreateListener {
         val userInput = it.message
         if (userInput.author.id == uid) {
             val numsOnly = userInput.content.replace("[^1-9]".toRegex(), "")
@@ -242,7 +242,7 @@ fun updateIndexToInput(originalMessage: Message, entry: Triple<Long, Int, List<E
                 updateIndexWithJump(jump, originalMessage, entry)
                 userInput.delete()
                 questionMessage.delete()
-                //Deregister Listener
+                api.removeListener(myListener)
                 }
             }
         }
