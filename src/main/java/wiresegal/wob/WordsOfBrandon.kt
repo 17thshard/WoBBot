@@ -242,7 +242,7 @@ fun updateIndexToInput(originalMessage: Message, entry: Triple<Long, Int, List<E
                 updateIndexWithJump(jump, originalMessage, entry)
                 userInput.delete()
                 questionMessage.delete()
-                api.removeListener(myListener)
+                api.removeMessageCreateListener(myListener)
                 }
             }
         }
