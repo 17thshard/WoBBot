@@ -352,7 +352,6 @@ fun main(args: Array<String>) {
         val reaction = it.reaction.get()
         if (reaction.emoji.isUnicodeEmoji) {
             val unicode = reaction.emoji.asUnicodeEmoji().get()
-            System.out.println("Test 1")
             if (!it.user.isBot && unicode in validReactions) {
                 val messageValue = messagesWithEmbedLists[message.id]
                 if (messageValue != null) {
