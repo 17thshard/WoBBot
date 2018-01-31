@@ -208,18 +208,49 @@ const val last = "⏭"
 const val first = "⏮"
 const val jumpLeft = "⏪"
 const val jumpRight = "⏩"
+const val nums = "\uD83D\uDD22"
 
-val validReactions = listOf(arrowLeft, arrowRight, done, last, first, jumpLeft, jumpRight)
+val validReactions = listOf(arrowLeft, arrowRight, done, last, first, jumpLeft, jumpRight, nums)
 
 val messagesWithEmbedLists = mutableMapOf<Long, Triple<Long, Int, List<EmbedBuilder>>>()
 
-fun updateMessageWithJump(jump: Int, message: Message, entry: Triple<Long, Int, List<EmbedBuilder>>) {
+fun updateMessageWithIndex(newIndex: Int, message: Message, entry: Triple<Long, Int, List<EmbedBuilder>>) {
     val (uid, index, embeds) = entry
-    val newIndex = Math.min(Math.max(index + jump, 0), embeds.size - 1)
     if (index != newIndex) {
         val newEmbed = embeds[newIndex]
         message.edit(newEmbed)
         messagesWithEmbedLists[message.id] = Triple(uid, newIndex, embeds)
+    }
+}
+
+fun updateIndexWithJump(jump: Int, message: Message, entry: Triple<Long, Int, List<EmbedBuilder>>) {
+    val (uid, index, embeds) = entry
+    val newIndex = Math.min(Math.max(index + jump, 0), embeds.size - 1)
+    updateMessageWithIndex(newIndex, message, entry)
+}
+
+fun updateIndexToInput(originalMessage: Message, entry: Triple<Long, Int, List<EmbedBuilder>>){
+    val (uid, index, embeds) = entry
+    var authorReacted = false
+    val questionMessage = originalMessage.channel.sendMessage("What number entry would you like to go to?").get()
+    while (!authorReacted) {
+        api.addMessageCreateListener {
+            val userInput = it.message
+            System.out.println("Message sent")
+            if (userInput.author.id == uid) {
+                System.out.println("UID recognized")
+                val numsOnly = userInput.content.replace("[^1-9]".toRegex(), "")
+                if (numsOnly != "") {
+                    System.out.println(numsOnly)
+                    val requestedIndex = numsOnly.toInt() + 1
+                    val jump = index - requestedIndex
+                    updateIndexWithJump(jump, originalMessage, entry)
+                    userInput.delete()
+                    questionMessage.delete()
+                    authorReacted = true
+                }
+            }
+        }
     }
 }
 
@@ -250,6 +281,7 @@ fun search(message: Message, terms: List<String>) {
                     search.addReaction(jumpRight)
                 if (allEmbeds.size > 2)
                     search.addReaction(last)
+                    search.addReaction(nums)
 
                 messagesWithEmbedLists[search.id] = Triple(message.author.id, 0, allEmbeds)
             }
@@ -323,18 +355,20 @@ fun main(args: Array<String>) {
         val reaction = it.reaction.get()
         if (reaction.emoji.isUnicodeEmoji) {
             val unicode = reaction.emoji.asUnicodeEmoji().get()
+            System.out.println("Test 1")
             if (!it.user.isBot && unicode in validReactions) {
                 val messageValue = messagesWithEmbedLists[message.id]
                 if (messageValue != null) {
                     val (uid, index, embeds) = messageValue
                     if (uid == it.user.id) {
                         when (unicode) {
-                            arrowLeft -> updateMessageWithJump(-1, message, messageValue)
-                            jumpLeft -> updateMessageWithJump(-10, message, messageValue)
-                            first -> updateMessageWithJump(-embeds.size, message, messageValue)
-                            arrowRight -> updateMessageWithJump(1, message, messageValue)
-                            jumpRight -> updateMessageWithJump(10, message, messageValue)
-                            last -> updateMessageWithJump(embeds.size, message, messageValue)
+                            arrowLeft -> updateIndexWithJump(-1, message, messageValue)
+                            jumpLeft -> updateIndexWithJump(-10, message, messageValue)
+                            first -> updateIndexWithJump(-embeds.size, message, messageValue)
+                            arrowRight -> updateIndexWithJump(1, message, messageValue)
+                            jumpRight -> updateIndexWithJump(10, message, messageValue)
+                            last -> updateIndexWithJump(embeds.size, message, messageValue)
+                            nums -> updateIndexToInput(message, messageValue)
                             done -> {
                                 val finalEmbed = embeds[index]
                                 finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
