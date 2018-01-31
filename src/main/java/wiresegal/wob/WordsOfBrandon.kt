@@ -233,8 +233,8 @@ fun updateIndexToInput(originalMessage: Message, entry: Triple<Long, Int, List<E
     val (uid, index, embeds) = entry
     var authorReacted = false
     val questionMessage = originalMessage.channel.sendMessage("What number entry would you like to go to?").get()
-    while (!authorReacted) {
-        api.addMessageCreateListener {
+    api.addMessageCreateListener{
+        while (!authorReacted) async {
             val userInput = it.message
             System.out.println("Message sent")
             if (userInput.author.id == uid) {
