@@ -239,7 +239,7 @@ fun updateIndexToInput(originalMessage: Message, entry: Triple<Long, Int, List<E
             if (userInput.author.id == uid) {
                 val numsOnly = userInput.content.replace("[^1-9]".toRegex(), "")
                 if (numsOnly != "") {
-                    val requestedIndex = numsOnly.toInt() + 1
+                    val requestedIndex = numsOnly.toInt() - 1
                     val jump = index - requestedIndex
                     updateIndexWithJump(jump, originalMessage, entry)
                     userInput.delete()
