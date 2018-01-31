@@ -233,8 +233,8 @@ fun updateIndexToInput(originalMessage: Message, entry: Triple<Long, Int, List<E
     val (uid, index, embeds) = entry
     var authorReacted = false
     val questionMessage = originalMessage.channel.sendMessage("What number entry would you like to go to?").get()
-    api.addMessageCreateListener{
-        while (!authorReacted) async {
+    while (!authorReacted) {
+        //Wait for message equivalent
             val userInput = it.message
             if (userInput.author.id == uid) {
                 val numsOnly = userInput.content.replace("[^1-9]".toRegex(), "")
