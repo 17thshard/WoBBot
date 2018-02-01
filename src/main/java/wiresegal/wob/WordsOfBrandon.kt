@@ -216,7 +216,6 @@ val validReactions = listOf(arrowLeft, arrowRight, done, last, first, jumpLeft, 
 val messagesWithEmbedLists = mutableMapOf<Long, Triple<Long, Int, List<EmbedBuilder>>>()
 
 fun updateMessageWithJump(jump: Int, message: Message, entry: Triple<Long, Int, List<EmbedBuilder>>) {
-    System.out.println(jump)
     val (uid, index, embeds) = entry
     val newIndex = Math.min(Math.max(index + jump, 0), embeds.size - 1)
     if (index != newIndex) {
@@ -369,15 +368,9 @@ fun main(args: Array<String>) {
             if (userInput.author.id == uid) {
                 val numsOnly = userInput.content.replace("[^0-9]".toRegex(), "")
                 if (numsOnly != "") {
-                    System.out.println("Numbers Recognized")
                     val (originalMessage, questionMessage) = messages
                     val requestedIndex = numsOnly.toInt() - 1
-                    System.out.print("Requested Index: ")
-                    System.out.println(requestedIndex)
                     val jump = requestedIndex - index
-                    System.out.print("Jump: ")
-                    System.out.println(jump)
-                    System.out.print("Recognized Jump: ")
                     updateMessageWithJump(jump, originalMessage, entry)
                     deletionIndex = awaiting.indexOf(awaitElement)
                     matchFound = true
