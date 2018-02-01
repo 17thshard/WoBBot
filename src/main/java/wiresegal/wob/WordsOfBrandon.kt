@@ -367,7 +367,7 @@ fun main(args: Array<String>) {
             val (messages, entry) = awaitElement
             val (uid, index, embeds) = entry
             if (userInput.author.id == uid) {
-                val numsOnly = userInput.content.replace("[^1-9]".toRegex(), "")
+                val numsOnly = userInput.content.replace("[^0-9]".toRegex(), "")
                 if (numsOnly != "") {
                     System.out.println("Numbers Recognized")
                     val (originalMessage, questionMessage) = messages
