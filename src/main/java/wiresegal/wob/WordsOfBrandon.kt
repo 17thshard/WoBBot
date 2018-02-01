@@ -232,7 +232,7 @@ fun updateIndexWithJump(jump: Int, message: Message, entry: Triple<Long, Int, Li
 
 fun updateIndexToInput(originalMessage: Message, entry: Triple<Long, Int, List<EmbedBuilder>>){
     val questionMessage = originalMessage.channel.sendMessage("What number entry would you like to go to?").get()
-
+    awaiting.add(Pair(Pair(originalMessage,questionMessage),entry))
 }
 
 fun search(message: Message, terms: List<String>) {
