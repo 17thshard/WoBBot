@@ -215,19 +215,15 @@ val validReactions = listOf(arrowLeft, arrowRight, done, last, first, jumpLeft, 
 
 val messagesWithEmbedLists = mutableMapOf<Long, Triple<Long, Int, List<EmbedBuilder>>>()
 
-fun updateMessageWithIndex(newIndex: Int, message: Message, entry: Triple<Long, Int, List<EmbedBuilder>>) {
+fun updateMessageWithJump(jump: Int, message: Message, entry: Triple<Long, Int, List<EmbedBuilder>>) {
+    System.out.println(jump)
     val (uid, index, embeds) = entry
+    val newIndex = Math.min(Math.max(index + jump, 0), embeds.size - 1)
     if (index != newIndex) {
         val newEmbed = embeds[newIndex]
         message.edit(newEmbed)
         messagesWithEmbedLists[message.id] = Triple(uid, newIndex, embeds)
     }
-}
-
-fun updateIndexWithJump(jump: Int, message: Message, entry: Triple<Long, Int, List<EmbedBuilder>>) {
-    val (uid, index, embeds) = entry
-    val newIndex = Math.min(Math.max(index + jump, 0), embeds.size - 1)
-    updateMessageWithIndex(newIndex, message, entry)
 }
 
 fun updateIndexToInput(originalMessage: Message, entry: Triple<Long, Int, List<EmbedBuilder>>){
@@ -342,12 +338,12 @@ fun main(args: Array<String>) {
                     val (uid, index, embeds) = messageValue
                     if (uid == it.user.id) {
                         when (unicode) {
-                            arrowLeft -> updateIndexWithJump(-1, message, messageValue)
-                            jumpLeft -> updateIndexWithJump(-10, message, messageValue)
-                            first -> updateIndexWithJump(-embeds.size, message, messageValue)
-                            arrowRight -> updateIndexWithJump(1, message, messageValue)
-                            jumpRight -> updateIndexWithJump(10, message, messageValue)
-                            last -> updateIndexWithJump(embeds.size, message, messageValue)
+                            arrowLeft -> updateMessageWithJump(-1, message, messageValue)
+                            jumpLeft -> updateMessageWithJump(-10, message, messageValue)
+                            first -> updateMessageWithJump(-embeds.size, message, messageValue)
+                            arrowRight -> updateMessageWithJump(1, message, messageValue)
+                            jumpRight -> updateMessageWithJump(10, message, messageValue)
+                            last -> updateMessageWithJump(embeds.size, message, messageValue)
                             nums -> updateIndexToInput(message, messageValue)
                             done -> {
                                 val finalEmbed = embeds[index]
@@ -373,10 +369,11 @@ fun main(args: Array<String>) {
             if (userInput.author.id == uid) {
                 val numsOnly = userInput.content.replace("[^1-9]".toRegex(), "")
                 if (numsOnly != "") {
+                    System.out.println("Numbers Recognized")
                     val (originalMessage, questionMessage) = messages
                     val requestedIndex = numsOnly.toInt() - 1
-                    val jump = index - requestedIndex
-                    updateIndexWithJump(jump, originalMessage, entry)
+                    val jump = requestedIndex - index
+                    updateMessageWithJump(jump, originalMessage, entry)
                     deletionIndex = awaiting.indexOf(awaitElement)
                     matchFound = true
                     userInput.delete()
