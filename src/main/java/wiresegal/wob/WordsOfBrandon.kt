@@ -372,7 +372,12 @@ fun main(args: Array<String>) {
                     System.out.println("Numbers Recognized")
                     val (originalMessage, questionMessage) = messages
                     val requestedIndex = numsOnly.toInt() - 1
+                    System.out.print("Requested Index: ")
+                    System.out.println(requestedIndex)
                     val jump = requestedIndex - index
+                    System.out.print("Jump: ")
+                    System.out.println(jump)
+                    System.out.print("Recognized Jump: ")
                     updateMessageWithJump(jump, originalMessage, entry)
                     deletionIndex = awaiting.indexOf(awaitElement)
                     matchFound = true
