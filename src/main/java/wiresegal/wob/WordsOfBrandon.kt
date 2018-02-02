@@ -236,7 +236,7 @@ fun updateMessageWithJump(jump: Int, message: Message, entry: Triple<Long, Int, 
 
 fun updateIndexToInput(originalMessage: Message, entry: Triple<Long, Int, List<EmbedBuilder>>){
     val questionMessage = originalMessage.channel.sendMessage("What number entry would you like to go to?").get()
-    awaiting.add(Pair(Pair(originalMessage,questionMessage),entry))
+    awaiting.add((originalMessage to questionMessage) to entry)
 }
 
 fun search(message: Message, terms: List<String>) {
@@ -266,7 +266,7 @@ fun search(message: Message, terms: List<String>) {
                     search.addReaction(jumpRight)
                 if (allEmbeds.size > 2)
                     search.addReaction(last)
-                    search.addReaction(nums)
+                search.addReaction(nums)
 
                 messagesWithEmbedLists[search.id] = Triple(message.author.id, 0, allEmbeds)
             }
@@ -386,7 +386,7 @@ fun main(args: Array<String>) {
             val (messages, entry) = awaitElement
             val (uid, index, embeds) = entry
             if (userInput.author.id == uid) {
-                val numsOnly = userInput.content.replace("[^0-9]".toRegex(), "")
+                val numsOnly = userInput.content.replace("\\D".toRegex(), "")
                 if (numsOnly != "") {
                     val (originalMessage, questionMessage) = messages
                     val requestedIndex = numsOnly.toInt() - 1
