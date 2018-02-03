@@ -6,6 +6,9 @@ import de.btobastian.javacord.DiscordApiBuilder
 import de.btobastian.javacord.entities.DiscordEntity
 import de.btobastian.javacord.entities.message.Message
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder
+import de.btobastian.javacord.entities.permissions.PermissionState
+import de.btobastian.javacord.entities.permissions.PermissionType
+import de.btobastian.javacord.entities.permissions.PermissionsBuilder
 import de.btobastian.javacord.exceptions.DiscordException
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
@@ -320,6 +323,25 @@ fun main(args: Array<String>) {
                         }
                     }
                 }
+            } else if (trimmed == "!wobabout") {
+                val invite = api.createBotInvite(PermissionsBuilder().setState(PermissionType.MANAGE_MESSAGES, PermissionState.ALLOWED).build())
+                val wireID = 77084495118868480L
+                val wire = api.getUserById(wireID)
+                val wireStr = if (wire.isPresent) wire.get().mentionTag else "@wiresegal#1522"
+                val host = api.owner
+                val hostStr = if (host.isPresent) host.get().mentionTag else "@wiresegal#1522"
+
+                val add = if (hostStr != wireStr) "\nHosted by: $hostStr" else ""
+
+                message.channel.sendMessage(EmbedBuilder().apply {
+                    setTitle("About WoBBot")
+                    setColor(arcanumColor)
+
+                    setDescription("Author: $wireStr$add\n" +
+                                "[Invite Link]($invite) | " +
+                            "[Github Source](https://github.com/yrsegal/WoBBot) | " +
+                            "[Arcanum](https://wob.coppermind.net/)")
+                })
             } else if (noChrTrimmed.startsWith("saythewords"))
                 message.channel.sendMessage("**`Life before death.`**\n" +
                         "**`Strength before weakness.`**\n" +
