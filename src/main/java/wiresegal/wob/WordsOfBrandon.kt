@@ -3,6 +3,7 @@ package wiresegal.wob
 import com.fasterxml.jackson.databind.node.ObjectNode
 import de.btobastian.javacord.DiscordApi
 import de.btobastian.javacord.DiscordApiBuilder
+import de.btobastian.javacord.entities.DiscordEntity
 import de.btobastian.javacord.entities.message.Message
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder
 import de.btobastian.javacord.exceptions.DiscordException
@@ -215,10 +216,12 @@ const val last = "⏭"
 const val first = "⏮"
 const val jumpLeft = "⏪"
 const val jumpRight = "⏩"
+const val no = "❌"
 
-val validReactions = listOf(arrowLeft, arrowRight, done, last, first, jumpLeft, jumpRight)
+val validReactions = listOf(arrowLeft, arrowRight, done, last, first, jumpLeft, jumpRight, no)
 
 val messagesWithEmbedLists = mutableMapOf<Long, Triple<Long, Int, List<EmbedBuilder>>>()
+val messageToAuthor = mutableMapOf<Long, Long>()
 
 fun updateMessageWithJump(jump: Int, message: Message, entry: Triple<Long, Int, List<EmbedBuilder>>) {
     val (uid, index, embeds) = entry
@@ -228,6 +231,14 @@ fun updateMessageWithJump(jump: Int, message: Message, entry: Triple<Long, Int, 
         message.edit(newEmbed)
         messagesWithEmbedLists[message.id] = Triple(uid, newIndex, embeds)
     }
+}
+
+fun Message.setupDeletable(author: DiscordEntity) = setupDeletable(author.id)
+
+fun Message.setupDeletable(id: Long): Message {
+    messageToAuthor[this.id] = id
+    addReaction(no)
+    return this
 }
 
 fun search(message: Message, terms: List<String>) {
@@ -242,10 +253,11 @@ fun search(message: Message, terms: List<String>) {
             allEmbeds.size == 1 -> {
                 val finalEmbed = allEmbeds.first()
                 finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
-                message.channel.sendMessage("", finalEmbed)
+                message.channel.sendMessage(finalEmbed).get().setupDeletable(message.author)
             }
             else -> {
                 val search = message.channel.sendMessage(allEmbeds.first()).get()
+                search.setupDeletable(message.author)
                 if (allEmbeds.size > 2)
                     search.addReaction(first)
                 if (allEmbeds.size > 10)
@@ -290,7 +302,7 @@ fun main(args: Array<String>) {
                         if (article != null && details != null) {
                             val title = details.find(ContainsOwnText("Name")).last().parent().text().removePrefix("Name ")
                             val date = details.find(ContainsOwnText("Date")).last().parent().text().removePrefix("Date ")
-                            message.channel.sendMessage(embedFromContent("$title ($date)", url, article))
+                            message.channel.sendMessage(embedFromContent("$title ($date)", url, article)).get().setupDeletable(message.author)
                         }
                     }
 
@@ -320,6 +332,8 @@ fun main(args: Array<String>) {
                 val index = (Math.random() * rattles.size).toInt()
                 val embed = message.channel.sendMessage(rattleEmbeds[index]).get()
 
+                embed.setupDeletable(message.author)
+
                 if (rattleEmbeds.size > 2)
                     embed.addReaction(first)
                 if (rattleEmbeds.size > 10)
@@ -337,32 +351,41 @@ fun main(args: Array<String>) {
         }
     }
     api.addReactionAddListener {
-        val message = it.message.get()
-        val reaction = it.reaction.get()
-        if (reaction.emoji.isUnicodeEmoji) {
-            val unicode = reaction.emoji.asUnicodeEmoji().get()
-            if (!it.user.isBot && unicode in validReactions) {
-                val messageValue = messagesWithEmbedLists[message.id]
-                if (messageValue != null) {
-                    val (uid, index, embeds) = messageValue
-                    if (uid == it.user.id) {
-                        when (unicode) {
-                            arrowLeft -> updateMessageWithJump(-1, message, messageValue)
-                            jumpLeft -> updateMessageWithJump(-10, message, messageValue)
-                            first -> updateMessageWithJump(-embeds.size, message, messageValue)
-                            arrowRight -> updateMessageWithJump(1, message, messageValue)
-                            jumpRight -> updateMessageWithJump(10, message, messageValue)
-                            last -> updateMessageWithJump(embeds.size, message, messageValue)
-                            done -> {
-                                val finalEmbed = embeds[index]
-                                finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
-                                message.edit(finalEmbed)
-                                messagesWithEmbedLists.remove(message.id)
-                                message.removeAllReactions()
+        if (it.message.isPresent && it.reaction.isPresent) {
+            val message = it.message.get()
+            val reaction = it.reaction.get()
+            if (message.author.isYourself && reaction.emoji.isUnicodeEmoji) {
+                val unicode = reaction.emoji.asUnicodeEmoji().get()
+                if (!it.user.isBot && unicode in validReactions) {
+                    if (unicode == no) {
+                        if (messageToAuthor[message.id] == it.user.id)
+                            it.deleteMessage()
+                        else
+                            it.removeReaction()
+                    } else {
+                        val messageValue = messagesWithEmbedLists[message.id]
+                        if (messageValue != null) {
+                            val (uid, index, embeds) = messageValue
+                            if (uid == it.user.id) {
+                                when (unicode) {
+                                    arrowLeft -> updateMessageWithJump(-1, message, messageValue)
+                                    jumpLeft -> updateMessageWithJump(-10, message, messageValue)
+                                    first -> updateMessageWithJump(-embeds.size, message, messageValue)
+                                    arrowRight -> updateMessageWithJump(1, message, messageValue)
+                                    jumpRight -> updateMessageWithJump(10, message, messageValue)
+                                    last -> updateMessageWithJump(embeds.size, message, messageValue)
+                                    done -> {
+                                        val finalEmbed = embeds[index]
+                                        finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
+                                        message.edit(finalEmbed)
+                                        messagesWithEmbedLists.remove(message.id)
+                                        message.removeAllReactions().whenComplete { _, _ -> message.setupDeletable(uid) }
+                                    }
+                                }
                             }
+                            it.removeReaction()
                         }
                     }
-                    it.removeReaction()
                 }
             }
         }
