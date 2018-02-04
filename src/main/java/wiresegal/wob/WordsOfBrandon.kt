@@ -100,6 +100,12 @@ fun embedFromContent(title: String, url: String, article: Element): EmbedBuilder
                     child.tagName() == "i" -> line = "_${line}_"
                     child.tagName() == "b" -> line = "**$line**"
                     child.tagName() == "u" -> line = "__${line}__"
+                    child.tagName() == "a" -> {
+                        var href = child.attr("href")
+                        if (href.startsWith("/"))
+                            href = "https://wob.coppermind.net" + href
+                        line = "[$line]($href)"
+                    }
                 }
                 lines[lines.size - 1] = lines.last() + line
                 lastLine = true
