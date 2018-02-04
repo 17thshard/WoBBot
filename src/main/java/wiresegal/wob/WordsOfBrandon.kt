@@ -320,8 +320,12 @@ fun main(args: Array<String>) {
                     setTitle("About WoBBot")
                     setColor(arcanumColor)
 
-                    setDescription("Author: $wireStr$add\n" +
-                            "Commands: `!wob` | `Ask the Silent Gatherers` | `Consult the Diagram` | `Check the Gemstone Archives`\n" +
+                    setDescription("Commands: \n" +
+                            " - `!wob`\n" +
+                            " - `Ask the Silent Gatherers`\n" +
+                            " - `Consult the Diagram`\n" +
+                            " - `Check the Gemstone Archives`\n" +
+                            "Author: $wireStr$add\n" +
                             "[Invite Link]($invite) | " +
                             "[Github Source](https://github.com/yrsegal/WoBBot) | " +
                             "[Arcanum](https://wob.coppermind.net/)")
