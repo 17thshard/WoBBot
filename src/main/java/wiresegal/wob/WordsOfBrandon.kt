@@ -40,8 +40,27 @@ fun Array<Pair<String, String>>.embeds(title: String, color: Color): List<EmbedB
     } }
 }
 
+fun Array<Pair<String, Pair<String, Color>>>.embeds(title: String): List<EmbedBuilder> {
+    return this.mapIndexed { idx, (rattle, pair) -> EmbedBuilder().apply {
+        val (comment, color) = pair
+        setTitle("(${idx + 1}/$size) \n$title")
+        setColor(color)
+        setDescription(rattle)
+        setFooter(comment)
+    } }
+}
+
 fun TextChannel.sendRandomEmbed(requester: DiscordEntity, title: String, color: Color, messages: Array<Pair<String, String>>) {
     val embeds = messages.embeds(title, color)
+
+    val index = (Math.random() * embeds.size).toInt()
+    val embed = embeds[index]
+
+    sendMessage(embed).get().setupDeletable(requester).setupControls(requester, index, embeds)
+}
+
+fun TextChannel.sendRandomEmbed(requester: DiscordEntity, title: String, messages: Array<Pair<String, Pair<String, Color>>>) {
+    val embeds = messages.embeds(title)
 
     val index = (Math.random() * embeds.size).toInt()
     val embed = embeds[index]
@@ -341,9 +360,9 @@ fun main(args: Array<String>) {
             else if (noChrTrimmed.startsWith("askthesilentgatherers"))
                 message.channel.sendRandomEmbed(message.author, "Death Rattles", Color.RED, rattles)
             else if (noChrTrimmed.startsWith("consultthediagram"))
-                message.channel.sendRandomEmbed(message.author, "The Diagram", Color.GREEN, diagram)
+                message.channel.sendRandomEmbed(message.author, "The Diagram", Color.BLUE, diagram)
             else if (noChrTrimmed.startsWith("checkthegemstonearchives"))
-                message.channel.sendRandomEmbed(message.author, "Gemstone Archives", Color.BLUE, archive)
+                message.channel.sendRandomEmbed(message.author, "Gemstone Archives", archive)
         }
     }
     api.addReactionAddListener {

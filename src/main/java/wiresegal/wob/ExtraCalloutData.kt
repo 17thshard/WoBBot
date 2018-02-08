@@ -1,5 +1,7 @@
 package wiresegal.wob
 
+import java.awt.Color
+
 /**
  * @author WireSegal
  * Created at 7:26 PM on 2/3/18.
@@ -42,6 +44,26 @@ val rattles = arrayOf(
         "The day was ours, but they took it. Stormfather! You cannot have it. The day is ours. They come, rasping, and the lights fail. Oh, Stormfather!" to "Collected circa Tanat 1173 by Taravangian. Subject was a young boy.",
         "So the night will reign, for the choice of honor is life..." to "Observed circa Ishi 1173 by Taravangian. Subject was King Valam of Jah Keved.")
 
+val gemColors = mapOf(
+        "sapphire" to Color(0x0000BB),
+        "smokestone" to Color(0x303030),
+        "ruby" to Color(0xBB0000),
+        "diamond" to Color(0xBBBBBB),
+        "emerald" to Color(0x206E25),
+        "garnet" to Color(0x9C0C0B),
+        "zircon" to Color(0x21B4E1),
+        "amethyst" to Color(0xAA20FF),
+        "topaz" to Color(0xCE7427),
+        "heliodor" to Color(0xCEBF2E)
+)
+
+private fun gemColorFor(last: String): Color {
+    for ((gem, color) in gemColors)
+        if (gem in last)
+            return color
+    return Color.WHITE
+}
+
 val archive = arrayOf(
         "As a Stoneward, I spent my entire life looking to sacrifice myself. I secretly worry that is the cowardly way. The easy way out." to "From drawer 29-5, topaz",
         "If this is to be permanent, then I wish to leave record of my husband and children. Wzmal, as good a man as any woman could dream of loving. Kmakra and Molinar, the true gemstones of my life." to "From drawer 12-15, ruby",
@@ -69,6 +91,7 @@ val archive = arrayOf(
         "Don't tell anyone. I can't say it. I must whisper. I foresaw this." to "From drawer 30-20, a particularly small emerald",
         "My spren claims that recording this will be good for me, so here I go. Everyone says I will swear the Fourth Ideal soon, and in so doing, earn my armor. I simply don't think that I can. Am I not supposed to want to help people?" to "From drawer 10-12, sapphire",
         "Good night, dear Urithiru. Good night, sweet Sibling. Good night, Radiants." to "From drawer 29-29, ruby")
+        .map { it.first to (it.second to gemColorFor(it.second)) }.toTypedArray()
 
 val diagram = arrayOf(
         "They will come you cannot stop their oaths look for those who survive when they should not that pattern will be your clue." to "From the Diagram, Coda of the Northwest Bottom Corner: Paragraph 3",
