@@ -283,6 +283,32 @@ fun search(message: Message, terms: List<String>) {
     }
 }
 
+fun about(message: Message) {
+    val invite = api.createBotInvite(PermissionsBuilder().setState(PermissionType.MANAGE_MESSAGES, PermissionState.ALLOWED).build())
+    val wireID = 77084495118868480L
+    val wire = api.getUserById(wireID)
+    val wireStr = if (wire.isPresent) wire.get().mentionTag else "@wiresegal#1522"
+    val host = api.owner
+    val hostStr = if (host.isPresent) host.get().mentionTag else "@wiresegal#1522"
+
+    val add = if (hostStr != wireStr) "\nHosted by: $hostStr" else ""
+
+    message.channel.sendMessage(EmbedBuilder().apply {
+        setTitle("About WoBBot")
+        setColor(arcanumColor)
+
+        setDescription("Commands: \n" +
+                " - `!wob`\n" +
+                " - `Ask the Silent Gatherers`\n" +
+                " - `Consult the Diagram`\n" +
+                " - `Check the Gemstone Archives`\n" +
+                "Author: $wireStr$add\n" +
+                "[Invite Link]($invite) | " +
+                "[Github Source](https://github.com/yrsegal/WoBBot) | " +
+                "[Arcanum](https://wob.coppermind.net/)")
+    })
+}
+
 fun main(args: Array<String>) {
     api.addMessageCreateListener {
         val message = it.message
@@ -293,9 +319,11 @@ fun main(args: Array<String>) {
             if (message.privateChannel.isPresent ||
                     content == "!wob" || content.startsWith("!wob ") || message.mentionedUsers.any { it.isYourself }) {
                 if (trimmed == "!wobhelp" || trimmed == api.yourself.mentionTag + "help" ||
-                        trimmed == "!wob" || trimmed == api.yourself.mentionTag) {
+                        trimmed == "!wob") {
                     message.channel.sendMessage("Use `!wob \"term\"` to search, or put a WoB link in to get its text directly.")
-                } else {
+                } else if (trimmed == api.yourself.mentionTag)
+                    about(message)
+                else {
                     val allWobs = "wob\\.coppermind\\.net/events/[\\w-]+/#(e\\d+)".toRegex().findAll(content)
 
                     for (wob in allWobs) async {
@@ -325,31 +353,9 @@ fun main(args: Array<String>) {
                         }
                     }
                 }
-            } else if (trimmed == "!wobabout") {
-                val invite = api.createBotInvite(PermissionsBuilder().setState(PermissionType.MANAGE_MESSAGES, PermissionState.ALLOWED).build())
-                val wireID = 77084495118868480L
-                val wire = api.getUserById(wireID)
-                val wireStr = if (wire.isPresent) wire.get().mentionTag else "@wiresegal#1522"
-                val host = api.owner
-                val hostStr = if (host.isPresent) host.get().mentionTag else "@wiresegal#1522"
-
-                val add = if (hostStr != wireStr) "\nHosted by: $hostStr" else ""
-
-                message.channel.sendMessage(EmbedBuilder().apply {
-                    setTitle("About WoBBot")
-                    setColor(arcanumColor)
-
-                    setDescription("Commands: \n" +
-                            " - `!wob`\n" +
-                            " - `Ask the Silent Gatherers`\n" +
-                            " - `Consult the Diagram`\n" +
-                            " - `Check the Gemstone Archives`\n" +
-                            "Author: $wireStr$add\n" +
-                            "[Invite Link]($invite) | " +
-                            "[Github Source](https://github.com/yrsegal/WoBBot) | " +
-                            "[Arcanum](https://wob.coppermind.net/)")
-                })
-            } else if (noChrTrimmed.startsWith("saythewords"))
+            } else if (trimmed == "!wobabout")
+                about(message)
+            else if (noChrTrimmed.startsWith("saythewords"))
                 message.channel.sendMessage("**`Life before death.`**\n" +
                         "**`Strength before weakness.`**\n" +
                         "**`Journey before destination.`**")
