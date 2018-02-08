@@ -316,8 +316,8 @@ fun main(args: Array<String>) {
             val content = message.content.toLowerCase(Locale.ROOT)
             val trimmed = content.replace("\\s".toRegex(), "")
             val noChrTrimmed = trimmed.replace("\\W".toRegex(), "")
-            if (message.privateChannel.isPresent ||
-                    content == "!wob" || content.startsWith("!wob ") || message.mentionedUsers.any { it.isYourself }) {
+            if (trimmed != "!wobabout" && (message.privateChannel.isPresent ||
+                    content == "!wob" || content.startsWith("!wob ") || message.mentionedUsers.any { it.isYourself })) {
                 if (trimmed == "!wobhelp" || trimmed == api.yourself.mentionTag + "help" ||
                         trimmed == "!wob") {
                     message.channel.sendMessage("Use `!wob \"term\"` to search, or put a WoB link in to get its text directly.")
