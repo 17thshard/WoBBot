@@ -45,12 +45,12 @@ val rattles = arrayOf(
         "So the night will reign, for the choice of honor is life..." to "Observed circa Ishi 1173 by Taravangian. Subject was King Valam of Jah Keved.")
 
 val gemColors = mapOf(
-        "sapphire" to Color(0x0000BB),
+        "sapphire" to Color(0x0000FF),
         "smokestone" to Color(0x303030),
-        "ruby" to Color(0xBB0000),
+        "ruby" to Color(0xFF0000),
         "diamond" to Color(0xBBBBBB),
-        "emerald" to Color(0x206E25),
-        "garnet" to Color(0x9C0C0B),
+        "emerald" to Color(0x00FF00),
+        "garnet" to Color(0x7B0C0B),
         "zircon" to Color(0x21B4E1),
         "amethyst" to Color(0xAA20FF),
         "topaz" to Color(0xCE7427),
