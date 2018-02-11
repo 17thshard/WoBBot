@@ -399,14 +399,14 @@ fun main(args: Array<String>) {
                     deletionIndex.add(awaiting.indexOf(awaitElement))
                     matchFound = true
                     userInput.delete()
-                    questionMessages[questionMessages.size - 1].delete()
-                    questionMessages.removeAt(questionMessages.size-1)
                 }
             }
         }
         if (matchFound) {
             for (match in deletionIndex.asReversed()) {
                 awaiting.removeAt(match)
+                questionMessages[questionMessages.size - 1].delete()
+                questionMessages.removeAt(questionMessages.size-1)
             }
             userInput.delete()
         }
