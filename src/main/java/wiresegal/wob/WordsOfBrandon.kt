@@ -66,7 +66,9 @@ val rattles = arrayOf(
 
 val api: DiscordApi = DiscordApiBuilder().setToken(token).login().join()
 
-var awaiting = mutableListOf<Pair<Pair<Message, Message>, Triple<Long, Int, List<EmbedBuilder>>>>()
+var awaiting = mutableListOf<Pair<Message, Triple<Long, Int, List<EmbedBuilder>>>>()
+
+var questionMessages = mutableListOf<Message>()
 
 val rattleEmbeds get() = rattles.mapIndexed { idx, (rattle, comment) -> EmbedBuilder().apply {
     setTitle("(${idx + 1}/${rattles.size}) \nDeath Rattles")
@@ -235,8 +237,11 @@ fun updateMessageWithJump(jump: Int, message: Message, entry: Triple<Long, Int, 
 }
 
 fun updateIndexToInput(originalMessage: Message, entry: Triple<Long, Int, List<EmbedBuilder>>){
-    val questionMessage = originalMessage.channel.sendMessage("What number entry would you like to go to?").get()
-    awaiting.add((originalMessage to questionMessage) to entry)
+    if (!awaiting.contains(originalMessage to entry)) {
+        val questionMessage = originalMessage.channel.sendMessage("What number entry would you like to go to?").get()
+        awaiting.add(originalMessage to entry)
+        questionMessages.add(questionMessage)
+    }
 }
 
 fun search(message: Message, terms: List<String>) {
@@ -381,27 +386,29 @@ fun main(args: Array<String>) {
     api.addMessageCreateListener {
         val userInput = it.message
         var matchFound = false
-        var deletionIndex = 0
+        var deletionIndex = mutableListOf<Int>()
         for(awaitElement in awaiting){
-            val (messages, entry) = awaitElement
+            val (originalMessage, entry) = awaitElement
             val (uid, index, embeds) = entry
             if (userInput.author.id == uid) {
                 val numsOnly = userInput.content.replace("\\D".toRegex(), "")
                 if (numsOnly != "") {
-                    val (originalMessage, questionMessage) = messages
                     val requestedIndex = numsOnly.toInt() - 1
                     val jump = requestedIndex - index
                     updateMessageWithJump(jump, originalMessage, entry)
-                    deletionIndex = awaiting.indexOf(awaitElement)
+                    deletionIndex.add(awaiting.indexOf(awaitElement))
                     matchFound = true
                     userInput.delete()
-                    questionMessage.delete()
-                    break
+                    questionMessages[questionMessages.size - 1].delete()
+                    questionMessages.removeAt(questionMessages.size-1)
                 }
             }
         }
         if (matchFound) {
-            awaiting.removeAt(deletionIndex)
+            for (match in deletionIndex.asReversed()) {
+                awaiting.removeAt(match)
+            }
+            userInput.delete()
         }
     }
 }
