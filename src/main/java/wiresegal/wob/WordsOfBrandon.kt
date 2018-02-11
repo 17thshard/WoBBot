@@ -31,6 +31,9 @@ const val iconUrl = "https://cdn.discordapp.com/emojis/373082865073913859.png?v=
 
 val api: DiscordApi = DiscordApiBuilder().setToken(token).login().join()
 
+var awaiting = mutableListOf<Pair<Message, Triple<Long, Int, List<EmbedBuilder>>>>()
+var questionMessages = mutableListOf<Message>()
+
 fun Array<Pair<String, String>>.embeds(title: String, color: Color): List<EmbedBuilder> {
     return this.mapIndexed { idx, (rattle, comment) -> EmbedBuilder().apply {
         setTitle("(${idx + 1}/$size) \n$title")
@@ -67,6 +70,7 @@ fun TextChannel.sendRandomEmbed(requester: DiscordEntity, title: String, message
 
     sendMessage(embed).get().setupDeletable(requester).setupControls(requester, index, embeds)
 }
+
 
 fun Element.find(vararg evaluators: Evaluator) = allElements.find(*evaluators)
 
@@ -218,8 +222,9 @@ const val first = "⏮"
 const val jumpLeft = "⏪"
 const val jumpRight = "⏩"
 const val no = "❌"
+const val nums = "\uD83D\uDD22"
 
-val validReactions = listOf(arrowLeft, arrowRight, done, last, first, jumpLeft, jumpRight, no)
+val validReactions = listOf(arrowLeft, arrowRight, done, last, first, jumpLeft, jumpRight, nums, no)
 
 val messagesWithEmbedLists = mutableMapOf<Long, Triple<Long, Int, List<EmbedBuilder>>>()
 val messageToAuthor = mutableMapOf<Long, Long>()
@@ -234,6 +239,14 @@ fun updateMessageWithJump(jump: Int, message: Message, entry: Triple<Long, Int, 
     }
 }
 
+fun updateIndexToInput(originalMessage: Message, entry: Triple<Long, Int, List<EmbedBuilder>>) {
+    if (!awaiting.contains(originalMessage to entry)) {
+        val questionMessage = originalMessage.channel.sendMessage("What number entry would you like to go to?").get()
+        awaiting.add(originalMessage to entry)
+        questionMessages.add(questionMessage)
+    }
+}
+  
 fun Message.setupDeletable(author: DiscordEntity) = setupDeletable(author.id)
 
 fun Message.setupDeletable(id: Long): Message {
@@ -254,6 +267,7 @@ fun Message.setupControls(requester: DiscordEntity, index: Int, embeds: List<Emb
         addReaction(jumpRight)
     if (embeds.size > 2)
         addReaction(last)
+    addReaction(nums)
 
     messagesWithEmbedLists[id] = Triple(requester.id, index, embeds)
     return this
@@ -395,6 +409,7 @@ fun main(args: Array<String>) {
                                     arrowRight -> updateMessageWithJump(1, message, messageValue)
                                     jumpRight -> updateMessageWithJump(10, message, messageValue)
                                     last -> updateMessageWithJump(embeds.size, message, messageValue)
+                                    nums -> updateIndexToInput(message, messageValue)
                                     done -> {
                                         val finalEmbed = embeds[index]
                                         finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
@@ -409,6 +424,34 @@ fun main(args: Array<String>) {
                     }
                 }
             }
+        }
+    }
+    api.addMessageCreateListener {
+        val userInput = it.message
+        var matchFound = false
+        var deletionIndex = mutableListOf<Int>()
+        for(awaitElement in awaiting){
+            val (originalMessage, entry) = awaitElement
+            val (uid, index, embeds) = entry
+            if (userInput.author.id == uid) {
+                val numsOnly = userInput.content.replace("\\D".toRegex(), "")
+                if (numsOnly != "") {
+                    val requestedIndex = numsOnly.toInt() - 1
+                    val jump = requestedIndex - index
+                    updateMessageWithJump(jump, originalMessage, entry)
+                    deletionIndex.add(awaiting.indexOf(awaitElement))
+                    matchFound = true
+                    userInput.delete()
+                }
+            }
+        }
+        if (matchFound) {
+            for (match in deletionIndex.asReversed()) {
+                awaiting.removeAt(match)
+                questionMessages[match].delete()
+                questionMessages.removeAt(match)
+            }
+            userInput.delete()
         }
     }
 }
