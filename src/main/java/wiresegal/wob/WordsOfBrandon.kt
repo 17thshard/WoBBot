@@ -405,8 +405,8 @@ fun main(args: Array<String>) {
         if (matchFound) {
             for (match in deletionIndex.asReversed()) {
                 awaiting.removeAt(match)
-                questionMessages[questionMessages.size - 1].delete()
-                questionMessages.removeAt(questionMessages.size-1)
+                questionMessages[match].delete()
+                questionMessages.removeAt(match)
             }
             userInput.delete()
         }
