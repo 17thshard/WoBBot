@@ -31,6 +31,9 @@ const val iconUrl = "https://cdn.discordapp.com/emojis/373082865073913859.png?v=
 
 val api: DiscordApi = DiscordApiBuilder().setToken(token).login().join()
 
+var awaiting = mutableListOf<Pair<Message, Triple<Long, Int, List<EmbedBuilder>>>>()
+var questionMessages = mutableListOf<Message>()
+
 fun Array<Pair<String, String>>.embeds(title: String, color: Color): List<EmbedBuilder> {
     return this.mapIndexed { idx, (rattle, comment) -> EmbedBuilder().apply {
         setTitle("(${idx + 1}/$size) \n$title")
@@ -236,12 +239,13 @@ fun updateMessageWithJump(jump: Int, message: Message, entry: Triple<Long, Int, 
     }
 }
 
-fun updateIndexToInput(originalMessage: Message, entry: Triple<Long, Int, List<EmbedBuilder>>){
+fun updateIndexToInput(originalMessage: Message, entry: Triple<Long, Int, List<EmbedBuilder>>) {
     if (!awaiting.contains(originalMessage to entry)) {
         val questionMessage = originalMessage.channel.sendMessage("What number entry would you like to go to?").get()
         awaiting.add(originalMessage to entry)
         questionMessages.add(questionMessage)
     }
+}
   
 fun Message.setupDeletable(author: DiscordEntity) = setupDeletable(author.id)
 
