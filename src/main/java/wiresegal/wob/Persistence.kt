@@ -74,12 +74,14 @@ open class SavedMap(val location: File, private val backingMap: MutableMap<Strin
     }
 }
 
+
 class SavedTypedMap<K : Any, V : Any>(location: File,
-                          private val serializeKey: (K) -> String,
-                          private val deserializeKey: (String) -> K?,
-                          private val serializeValue: (K, V) -> String,
-                          private val deserializeValue: (K, String) -> V?,
-                          private val backingMap: MutableMap<K, V> = mutableMapOf()) : MutableMap<K, V> by backingMap {
+                                      private val serializeKey: (K) -> String,
+                                      private val deserializeKey: (String) -> K?,
+                                      private val serializeValue: (K, V) -> String,
+                                      private val deserializeValue: (K, String) -> V?,
+                                      private val persistentLoad: Boolean = true,
+                                      private val backingMap: MutableMap<K, V> = mutableMapOf()) : MutableMap<K, V> by backingMap {
 
     private val internalMap = SavedBackingMap(location)
 
@@ -91,20 +93,23 @@ class SavedTypedMap<K : Any, V : Any>(location: File,
     }
 
     override fun put(key: K, value: V): V? = synchronized(lock) {
-        internalMap.load()
+        if (persistentLoad)
+            internalMap.load()
         val ret = backingMap.put(key, value)
         internalMap.save()
         return ret
     }
 
     override fun putAll(from: Map<out K, V>) = synchronized(lock) {
-        internalMap.load()
+        if (persistentLoad)
+            internalMap.load()
         backingMap.putAll(from)
         internalMap.save()
     }
 
     override fun remove(key: K): V? = synchronized(lock) {
-        internalMap.load()
+        if (persistentLoad)
+            internalMap.load()
         val ret = backingMap.remove(key)
         internalMap.save()
         return ret
@@ -127,7 +132,8 @@ class SavedTypedMap<K : Any, V : Any>(location: File,
                         k to v
                     else
                         null
-                } else null }.toMap())
+                } else null
+            }.toMap())
         }
     }
 }

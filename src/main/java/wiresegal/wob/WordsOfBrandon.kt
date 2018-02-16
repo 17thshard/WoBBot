@@ -32,7 +32,7 @@ val messagesWithEmbedLists = SavedTypedMap<Long, EmbeddedInfo>(fileInHome("wob_b
             }
         }
     }
-    null })
+    null }, false)
 val messageToAuthor = SavedTypedMap(fileInHome("wob_bot_deletable"), { it.toString() }, { it.toLongOrNull() ?: 0L },
         { _, value -> value.toString() }, { _, value -> value.toLongOrNull() ?: 0L })
 val permissions = SavedTypedMap(fileInHome("wob_bot_permissions"), { it.toString() }, { it.toLongOrNull() ?: 0L },
