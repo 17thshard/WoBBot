@@ -13,6 +13,10 @@
 
     <repositories>
         <repository>
+            <id>JCenter</id>
+            <url>http://jcenter.bintray.com</url>
+        </repository>
+        <repository>
             <id>jitpack.io</id>
             <url>https://jitpack.io</url>
         </repository>
@@ -175,6 +179,11 @@
             <artifactId>Javacord</artifactId>
             <!-- See below what to insert here -->
             <version>548f43d</version>
+        </dependency>
+        <dependency>
+            <groupId>com.overzealous</groupId>
+            <artifactId>remark</artifactId>
+            <version>1.1.0</version>
         </dependency>
     </dependencies>
 

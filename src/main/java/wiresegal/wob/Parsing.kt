@@ -6,181 +6,116 @@ import de.btobastian.javacord.entities.permissions.PermissionState
 import de.btobastian.javacord.entities.permissions.PermissionType
 import de.btobastian.javacord.entities.permissions.PermissionsBuilder
 import de.btobastian.javacord.exceptions.DiscordException
-import org.jsoup.Jsoup
-import org.jsoup.nodes.Element
-import org.jsoup.nodes.TextNode
-import org.jsoup.select.Elements
-import org.jsoup.select.Evaluator
-import org.jsoup.select.Evaluator.Class
-import org.jsoup.select.Evaluator.Tag
-import java.net.URLEncoder
 
 /**
  * @author WireSegal
  * Created at 11:40 PM on 2/15/18.
  */
 
-fun Element.find(vararg evaluators: Evaluator) = allElements.find(*evaluators)
+val API_URL_MATCHER = "^https://wob\\.coppermind\\.net/api/\\w+/(\\d+)".toRegex()
 
-fun Elements.find(vararg evaluators: Evaluator): Elements {
-    var nodes: List<Element> = this
-    for (evaluator in evaluators)
-        nodes = nodes.filter { it.`is`(evaluator) }
-    return Elements(nodes)
-}
+fun embedFromContent(titlePrefix: String, entry: Entry): EmbedBuilder {
+    val date = entry.event.date.split("-")
+    val month = months[date[1].toInt() - 1]
+    val dateStr = "($month ${date[2]}, ${date[0]})"
 
-fun embedFromContent(title: String, url: String, article: Element): EmbedBuilder {
-    val embed = EmbedBuilder().setColor(arcanumColor).setTitle(title).setUrl(url).setThumbnail(iconUrl)
+    val title = titlePrefix + entry.event.name + " " + dateStr
 
-    var pending = false
+    val embed = EmbedBuilder()
+            .setColor(arcanumColor)
+            .setTitle(title)
+            .setUrl("https://wob.coppermind.net/events/${API_URL_MATCHER.find(entry.event.url)!!.groupValues[1]}/#e${API_URL_MATCHER.find(entry.url)!!.groupValues[1]}")
+            .setThumbnail(iconUrl)
 
-    val lines = mutableListOf<String>()
-    var lastSpeaker = "Context"
-
-    val content = article.find(Tag("div"), Class("entry-content")).first()
-    val footnote = article.find(Tag("small"), Class("footnote")).first()
-    if (footnote != null)
-        embed.setFooter(footnote.text())
-
-    val fields = mutableListOf<Pair<String, String>>()
-
-    var lastLine = false
-
-    for (child in content.childNodes()) {
-        var text: String? = null
-        if (child is Element && child.hasClass("entry-speaker")) {
-            if (lines.isNotEmpty()) {
-                val str = lines.joinToString("\n").replace("\\s{2,}".toRegex(), " ")
-                fields.add(lastSpeaker to str)
-                lines.clear()
-            }
-            lastLine = false
-            lastSpeaker = child.text()
-            if (lastSpeaker.isBlank())
-                lastSpeaker = "Context"
-            if (lastSpeaker.contains("[PENDING REVIEW]")) {
-                pending = true
-                lastSpeaker = lastSpeaker.replace("[PENDING REVIEW]", "").trim()
-            }
-        } else if (child is Element && child.tag().isInline) {
-            var line = child.text()
-
-            if (child.tagName() == "p" || lines.isEmpty()) text = line
-            else {
-                when {
-                    child.tagName() == "i" -> line = "_${line}_"
-                    child.tagName() == "b" -> line = "**$line**"
-                    child.tagName() == "u" -> line = "__${line}__"
-                    child.tagName() == "a" -> {
-                        var href = child.attr("href")
-                        if (href.startsWith("/"))
-                            href = "https://wob.coppermind.net" + href
-                        line = "[$line]($href)"
-                    }
-                }
-                lines[lines.size - 1] = lines.last() + line
-                lastLine = true
-            }
-        } else if (child is Element) text = child.text()
-        else if (child is TextNode) text = child.text()
-
-        if (text != null) {
-            if (lastLine)
-                lines[lines.size - 1] = lines.last() + text
-            else
-                lines.add(text)
-            lastLine = false
-        }
+    when {
+        entry.event.reviewState == ReviewState.PENDING ->
+            embed.setDescription("__**Pending Review**__")
+        entry.paraphrased ->
+            embed.setDescription("__**Paraphrased**__")
+        entry.event.reviewState == ReviewState.APPROVED ->
+            embed.setDescription("**Approved**")
     }
 
-    if (pending)
-        embed.setDescription("__**Pending Review**__")
+    if (entry.note != null)
+        embed.setFooter(entry.note)
 
-    if (lines.isNotEmpty()) {
-        val str = lines
-                .joinToString("\n") { it.replace("\\s{2,}".toRegex(), " ") }
-                .replace("\n{3,}".toRegex(), "\n\n")
-        fields.add(lastSpeaker to str)
-    }
-
-    var lastJson = embed.toJsonNode()
     val arcanumSuffix = "*… (Check Arcanum for more.)*"
-    for ((author, comment) in fields.filter { it.second.isNotBlank() }
-            .map { (author, comment) ->
-                if (comment.length > 1024) author to comment.substring(0, 1024 - arcanumSuffix.length)
+    for ((speaker, comment) in entry.lines.map {
+                val speaker = it.speaker
+                val comment = it.getTrueText()
+                if (comment.length > 1024) speaker to comment.substring(0, 1024 - arcanumSuffix.length)
                         .replace("\\w+$".toRegex(), "").trim() + arcanumSuffix
-                else author to comment
+                else speaker to comment
             }) {
-        embed.addField(author, comment, false)
+
+        embed.addField(speaker, comment, false)
         val newJson = embed.toJsonNode()
-        if (newJson.toString().length > 1950) {
-            val footer = lastJson.putObject("footer")
-            footer.put("text", "(Too long to display. Check Arcanum for more.)")
+        val footer = newJson.objectNode()
+        footer.put("text", "(Too long to display. Check Arcanum for more.)")
+        val size = footer.toString().length - newJson.get("footer").toString().length
+        if (newJson.toString().length > 2000 - size) {
+            newJson.set("footer", footer)
             return FakeEmbedBuilder(newJson)
         }
-        lastJson = newJson
     }
 
     if (embed.toJsonNode().toString().length > 2000)
-        return backupEmbed(title, url)
+        return backupEmbed(title, entry)
 
     return embed
 }
 
-fun backupEmbed(title: String, url: String): EmbedBuilder {
-    val backup = EmbedBuilder().setColor(arcanumColor).setTitle(title).setUrl(url).setThumbnail(iconUrl)
+fun backupEmbed(title: String, entry: Entry): EmbedBuilder {
+    val backup = EmbedBuilder().setColor(arcanumColor).setTitle(title)
+            .setUrl("https://wob.coppermind.net/events/${API_URL_MATCHER.find(entry.event.url)!!.groupValues[1]}/#e${API_URL_MATCHER.find(entry.url)!!.groupValues[1]}")
+            .setThumbnail(iconUrl)
     backup.setDescription("This WoB is too long. Click on the link above to see it on Arcanum.")
     return backup
 }
 
-const val masterUrl = "https://wob.coppermind.net/adv_search/?ordering=rank&query="
+val months = listOf("Jan.", "Feb.", "March", "April",
+        "May", "June", "July", "Aug.",
+        "Sept.", "Oct.", "Nov.", "Dec.")
 
 fun harvestFromSearch(terms: List<String>): List<EmbedBuilder> {
-    val baseUrl = masterUrl + terms.joinToString("+") { URLEncoder.encode(it, "UTF-8") } + "&page="
-    val allArticles = mutableListOf<Element>()
+    val allArticles = entriesFromSearch(terms)
     val allEmbeds = mutableListOf<EmbedBuilder>()
 
-    val bigSize = if ((1..5).all { harvestFromSearchPage(baseUrl, it, allArticles) })
-        "... (250)" else allArticles.size.toString()
+    val articles = if (allArticles.size > 250) allArticles.subList(0, 250) else allArticles
 
+    val size = if (allArticles !== articles) "... (250)" else articles.size.toString()
 
     for ((idx, article) in allArticles.withIndex()) {
-        val title = article.find(Tag("header"), Class("entry-options")).first().find(Tag("a")).first()
-        val titleText = "Search: \"${terms.joinToString()}\" (${idx+1}/$bigSize) \n" + title.text()
-        allEmbeds.add(embedFromContent(titleText, "https://wob.coppermind.net" + title.attr("href"), article))
+        val titleText = "Search: \"${terms.joinToString()}\" (${idx+1}/$size) \n"
+        allEmbeds.add(embedFromContent(titleText, article))
     }
 
     return allEmbeds
 }
 
-fun harvestFromSearchPage(url: String, page: Int, list: MutableList<Element>): Boolean {
-    val data = Jsoup.connect(url + page).get()
-    list += data.find(Tag("article"), Class("entry-article"))
-
-    return data.find(Class("fa-chevron-right")).isNotEmpty()
-}
-
 fun search(message: Message, terms: List<String>) {
-    val waiting = message.channel.sendMessage("Searching for \"${terms.joinToString().replace("&!", "!")}\"...").get()
-    val type = message.channel.typeContinuously()
-    val allEmbeds = harvestFromSearch(terms)
-    type.close()
+    async {
+        val waiting = message.channel.sendMessage("Searching for \"${terms.joinToString().replace("&!", "!")}\"...").get()
+        val type = message.channel.typeContinuously()
+        val allEmbeds = harvestFromSearch(terms)
+        type.close()
 
-    try {
-        when {
-            allEmbeds.isEmpty() -> message.channel.sendMessage("Couldn't find any WoBs for \"${terms.joinToString().replace("&!", "!")}\".")
-            allEmbeds.size == 1 -> {
-                val finalEmbed = allEmbeds.first()
-                finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
-                message.channel.sendMessage(finalEmbed).get().setupDeletable(message.author)
+        try {
+            when {
+                allEmbeds.isEmpty() -> message.channel.sendMessage("Couldn't find any WoBs for \"${terms.joinToString().replace("&!", "!")}\".")
+                allEmbeds.size == 1 -> {
+                    val finalEmbed = allEmbeds.first()
+                    finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
+                    message.channel.sendMessage(finalEmbed).get().setupDeletable(message.author)
+                }
+                else ->
+                    message.channel.sendMessage(allEmbeds.first()).get()
+                            .setupDeletable(message.author).setupControls(message.author, 0, allEmbeds)
             }
-            else ->
-                message.channel.sendMessage(allEmbeds.first()).get()
-                        .setupDeletable(message.author).setupControls(message.author, 0, allEmbeds)
+            waiting.delete()
+        } catch (e: DiscordException) {
+            message.channel.sendMessage("An error occurred trying to look up the WoB.")
         }
-        waiting.delete()
-    } catch (e: DiscordException) {
-        message.channel.sendMessage("An error occurred trying to look up the WoB.")
     }
 }
 
@@ -200,9 +135,11 @@ fun about(message: Message) {
 
         setDescription("Commands: \n" +
                 " - `!wob`\n" +
+                " - `!wobrandom`\n" +
                 " - `Ask the Silent Gatherers`\n" +
                 " - `Consult the Diagram`\n" +
                 " - `Check the Gemstone Archives`\n" +
+                " - `!wobrank` (Admin only)\n" +
                 "Author: $wireStr$add\n" +
                 "[Invite Link]($invite) | " +
                 "[Github Source](https://github.com/yrsegal/WoBBot) | " +
