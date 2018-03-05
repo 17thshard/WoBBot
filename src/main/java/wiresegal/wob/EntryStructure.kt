@@ -19,7 +19,9 @@ data class Entry(val url: String,
             val event: Event,
             val paraphrased: Boolean,
             val note: String?,
-            val lines: List<Line>)
+            val lines: List<Line>) {
+    fun getFooterText(): String = Jsoup.parse(note).text()
+}
 
 data class Event(val url: String, val name: String, val date: String, val reviewState: ReviewState)
 

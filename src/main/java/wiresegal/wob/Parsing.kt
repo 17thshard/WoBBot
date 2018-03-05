@@ -36,7 +36,7 @@ fun embedFromContent(titlePrefix: String, entry: Entry): EmbedBuilder {
     }
 
     if (entry.note != null && entry.note.isNotBlank())
-        embed.setFooter("Footnote: " + entry.note)
+        embed.setFooter("Footnote: " + entry.getFooterText())
 
     val arcanumSuffix = "*… (Check Arcanum for more.)*"
     for ((speaker, comment) in entry.lines.map {
