@@ -5,7 +5,6 @@ import de.btobastian.javacord.entities.message.embed.EmbedBuilder
 import de.btobastian.javacord.entities.permissions.PermissionState
 import de.btobastian.javacord.entities.permissions.PermissionType
 import de.btobastian.javacord.entities.permissions.PermissionsBuilder
-import de.btobastian.javacord.exceptions.DiscordException
 
 /**
  * @author WireSegal
@@ -36,8 +35,8 @@ fun embedFromContent(titlePrefix: String, entry: Entry): EmbedBuilder {
             embed.setDescription("**Approved**")
     }
 
-    if (entry.note != null)
-        embed.setFooter(entry.note)
+    if (entry.note != null && entry.note.isNotBlank())
+        embed.setFooter("Footnote: " + entry.note)
 
     val arcanumSuffix = "*… (Check Arcanum for more.)*"
     for ((speaker, comment) in entry.lines.map {
@@ -78,44 +77,50 @@ val months = listOf("Jan.", "Feb.", "March", "April",
         "Sept.", "Oct.", "Nov.", "Dec.")
 
 fun harvestFromSearch(terms: List<String>): List<EmbedBuilder> {
-    val allArticles = entriesFromSearch(terms)
+    println("start" + System.currentTimeMillis())
+    val (allArticles, large) = entriesFromSearch(terms)
     val allEmbeds = mutableListOf<EmbedBuilder>()
+    println("articles" + System.currentTimeMillis())
 
-    val articles = if (allArticles.size > 250) allArticles.subList(0, 250) else allArticles
-
-    val size = if (allArticles !== articles) "... (250)" else articles.size.toString()
+    val size = if (large) "... (250)" else allArticles.size.toString()
 
     for ((idx, article) in allArticles.withIndex()) {
         val titleText = "Search: \"${terms.joinToString()}\" (${idx+1}/$size) \n"
         allEmbeds.add(embedFromContent(titleText, article))
     }
 
+    println("finished" + System.currentTimeMillis())
+
     return allEmbeds
 }
 
 fun search(message: Message, terms: List<String>) {
-    async {
-        val waiting = message.channel.sendMessage("Searching for \"${terms.joinToString().replace("&!", "!")}\"...").get()
-        val type = message.channel.typeContinuously()
+    val waiting = message.channel.sendMessage("Searching for \"${terms.joinToString().replace("&!", "!")}\"...").get()
+    val type = message.channel.typeContinuously()
+    try {
+        println("search" + System.currentTimeMillis())
         val allEmbeds = harvestFromSearch(terms)
+        println("close type" + System.currentTimeMillis())
+        println("reply" + System.currentTimeMillis())
+
         type.close()
 
-        try {
-            when {
-                allEmbeds.isEmpty() -> message.channel.sendMessage("Couldn't find any WoBs for \"${terms.joinToString().replace("&!", "!")}\".")
-                allEmbeds.size == 1 -> {
-                    val finalEmbed = allEmbeds.first()
-                    finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
-                    message.channel.sendMessage(finalEmbed).get().setupDeletable(message.author)
-                }
-                else ->
-                    message.channel.sendMessage(allEmbeds.first()).get()
-                            .setupDeletable(message.author).setupControls(message.author, 0, allEmbeds)
+        when {
+            allEmbeds.isEmpty() -> message.channel.sendMessage("Couldn't find any WoBs for \"${terms.joinToString().replace("&!", "!")}\".")
+            allEmbeds.size == 1 -> {
+                val finalEmbed = allEmbeds.first()
+                finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
+                message.channel.sendMessage(finalEmbed).get().setupDeletable(message.author)
             }
-            waiting.delete()
-        } catch (e: DiscordException) {
-            message.channel.sendMessage("An error occurred trying to look up the WoB.")
+            else ->
+                message.channel.sendMessage(allEmbeds.first()).get()
+                        .setupDeletable(message.author).setupControls(message.author, 0, allEmbeds)
         }
+        waiting.delete()
+    } catch (e: Exception) {
+        type.close()
+        message.channel.sendMessage("An error occurred trying to look up the WoB.")
+        e.printStackTrace()
     }
 }
 

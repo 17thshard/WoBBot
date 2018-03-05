@@ -79,7 +79,6 @@ fun actOnCreation(it: MessageCreateEvent) {
                         }.filter { it.matches("[!+|&\\w]+".toRegex()) }
                 if (terms.any()) async {
                     search(message, terms)
-
                 }
             }
         } else if (trimmed == "!wobabout")
