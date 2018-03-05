@@ -46,7 +46,6 @@ fun embedFromContent(titlePrefix: String, entry: Entry): EmbedBuilder {
                         .replace("\\w+$".toRegex(), "").trim() + arcanumSuffix
                 else speaker to comment
             }) {
-
         embed.addField(speaker, comment, false)
         val newJson = embed.toJsonNode()
         val footer = newJson.objectNode()
@@ -77,10 +76,8 @@ val months = listOf("Jan.", "Feb.", "March", "April",
         "Sept.", "Oct.", "Nov.", "Dec.")
 
 fun harvestFromSearch(terms: List<String>): List<EmbedBuilder> {
-    println("start" + System.currentTimeMillis())
     val (allArticles, large) = entriesFromSearch(terms)
     val allEmbeds = mutableListOf<EmbedBuilder>()
-    println("articles" + System.currentTimeMillis())
 
     val size = if (large) "... (250)" else allArticles.size.toString()
 
@@ -89,8 +86,6 @@ fun harvestFromSearch(terms: List<String>): List<EmbedBuilder> {
         allEmbeds.add(embedFromContent(titleText, article))
     }
 
-    println("finished" + System.currentTimeMillis())
-
     return allEmbeds
 }
 
@@ -98,10 +93,7 @@ fun search(message: Message, terms: List<String>) {
     val waiting = message.channel.sendMessage("Searching for \"${terms.joinToString().replace("&!", "!")}\"...").get()
     val type = message.channel.typeContinuously()
     try {
-        println("search" + System.currentTimeMillis())
         val allEmbeds = harvestFromSearch(terms)
-        println("close type" + System.currentTimeMillis())
-        println("reply" + System.currentTimeMillis())
 
         type.close()
 

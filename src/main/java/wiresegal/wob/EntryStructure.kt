@@ -56,16 +56,13 @@ fun randomEntry(): Entry {
 
 fun entriesFromSearch(terms: List<String>): Pair<List<Entry>, Boolean> {
     val urlParams = terms.joinToString("+") { URLEncoder.encode(it, "UTF-8") }
-    println("fetchURL" + System.currentTimeMillis())
     val list = mutableListOf<Entry>()
     var link = formatUrl("https://wob.coppermind.net/api/search_entry?ordering=rank&query=$urlParams")
 
     return list to (0 until 5).all {
         val eventJson = nakedApiRequest(link)
-        println("fetched$it|" + System.currentTimeMillis())
         val results = JsonParser().parse(eventJson).asJsonObject
         results.getAsJsonArray("results").mapTo(list) { GSON.fromJson(it, Entry::class.java) }
-        println("parsed$it|" + System.currentTimeMillis())
         if (results.get("next").isJsonPrimitive) {
             link = results.get("next").asString
             true
