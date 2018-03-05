@@ -124,7 +124,7 @@ fun actOnCreation(it: MessageCreateEvent) {
                     }
                 } else {
                     message.channel.sendMessage(EmbedBuilder().apply {
-                        setTitle("WoB Rank Details")
+                        setTitle("WoB Rank Details (Admin Only)")
                         setColor(arcanumColor)
 
                         var roles = ""
@@ -137,10 +137,10 @@ fun actOnCreation(it: MessageCreateEvent) {
                                 roles += rolesInServer.joinToString("\n") { it.mentionTag }
                             }
                         }
-                        setDescription("Usage:\n" +
+                        setDescription("Anyone with one of the whitelisted roles may use reactions as though they were the one who sent the message.\n\n" +
+                                "Usage:\n" +
                                 "`!wobrank add <Role Name>`\n" +
                                 "`!wobrank remove <Role Name>`" + roles)
-
                     })
                 }
             }
