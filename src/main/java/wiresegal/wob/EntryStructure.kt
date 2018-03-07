@@ -33,16 +33,11 @@ data class Line(val speaker: String, val text: String) {
     fun getTrueText(): String = Remark(Options.github().apply { inlineLinks = true }).convert(text)
 }
 
-fun nakedApiRequest(url: String): String = Jsoup.connect(url)
+fun apiRequest(url: String): String = Jsoup.connect(url)
         .ignoreContentType(true)
         .header("Accept", "application/json; charset=utf-8")
         .method(Connection.Method.GET)
         .execute().body()
-
-fun formatUrl(url: String) = url + if ('?' in url) "&format=json" else "?format=json"
-
-fun apiRequest(url: String) =
-        nakedApiRequest(formatUrl(url))
 
 fun entryFromId(id: Int): Entry {
     val eventJson = apiRequest("https://wob.coppermind.net/api/entry/$id")
@@ -57,18 +52,11 @@ fun randomEntry(): Entry {
 fun entriesFromSearch(terms: List<String>): Pair<List<Entry>, Boolean> {
     val urlParams = terms.joinToString("+") { URLEncoder.encode(it, "UTF-8") }
     val list = mutableListOf<Entry>()
-    var link = formatUrl("https://wob.coppermind.net/api/search_entry?ordering=rank&query=$urlParams")
+    val eventJson = apiRequest("https://wob.coppermind.net/api/search_entry?ordering=rank&page_size=250&query=$urlParams")
+    val results = JsonParser().parse(eventJson).asJsonObject
+    results.getAsJsonArray("results").mapTo(list) { GSON.fromJson(it, Entry::class.java) }
 
-    return list to (0 until 5).all {
-        val eventJson = nakedApiRequest(link)
-        val results = JsonParser().parse(eventJson).asJsonObject
-        results.getAsJsonArray("results").mapTo(list) { GSON.fromJson(it, Entry::class.java) }
-        if (results.get("next").isJsonPrimitive) {
-            link = results.get("next").asString
-            true
-        } else
-            false
-    }
+    return list to results.get("next").isJsonPrimitive
 }
 
 val GSON: Gson = GsonBuilder()

@@ -157,5 +157,11 @@ fun actOnCreation(it: MessageCreateEvent) {
             message.channel.sendRandomEmbed(message.author, "The Diagram", Color.BLUE, diagram)
         else if (noChrTrimmed.startsWith("checkthegemstonearchives"))
             message.channel.sendRandomEmbed(message.author, "Gemstone Archives", archive)
+        else if (content == "express my opinion, wobbot") {
+            if (message.author.id == 77084495118868480L || message.author.checkPermissions(message.channel, BotRanks.MANAGE_MESSAGES)) {
+                message.delete()
+                message.channel.sendMessage("ಠ_ಠ")
+            }
+        }
     }
 }
