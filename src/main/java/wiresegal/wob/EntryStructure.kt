@@ -33,26 +33,33 @@ data class Line(val speaker: String, val text: String) {
     fun getTrueText(): String = Remark(Options.github().apply { inlineLinks = true }).convert(text)
 }
 
-fun apiRequest(url: String): String = Jsoup.connect(url)
-        .ignoreContentType(true)
-        .header("Accept", "application/json; charset=utf-8")
-        .method(Connection.Method.GET)
-        .execute().body()
+fun apiRequest(type: String, vararg params: Pair<String, Any>): String {
+    val allParams = mutableMapOf(*params)
+    allParams["format"] = "json"
+
+    return Jsoup.connect("https://wob.coppermind.net/api/$type?" +
+            allParams.entries.joinToString("&") { "${it.key}=${it.value}" })
+            .ignoreContentType(true)
+            .header("Accept", "application/json; charset=utf-8")
+            .header("Authorization", "Token $arcanumToken")
+            .method(Connection.Method.GET)
+            .execute().body()
+}
 
 fun entryFromId(id: Int): Entry {
-    val eventJson = apiRequest("https://wob.coppermind.net/api/entry/$id")
+    val eventJson = apiRequest("entry/$id")
     return GSON.fromJson(eventJson, Entry::class.java)
 }
 
 fun randomEntry(): Entry {
-    val eventJson = apiRequest("https://wob.coppermind.net/api/random_entry")
+    val eventJson = apiRequest("random_entry")
     return GSON.fromJson(eventJson, Entry::class.java)
 }
 
 fun entriesFromSearch(terms: List<String>): Pair<List<Entry>, Boolean> {
     val urlParams = terms.joinToString("+") { URLEncoder.encode(it, "UTF-8") }
     val list = mutableListOf<Entry>()
-    val eventJson = apiRequest("https://wob.coppermind.net/api/search_entry?ordering=rank&page_size=250&query=$urlParams")
+    val eventJson = apiRequest("search_entry", "ordering" to "rank", "page_size" to 250, "query" to urlParams)
     val results = JsonParser().parse(eventJson).asJsonObject
     results.getAsJsonArray("results").mapTo(list) { GSON.fromJson(it, Entry::class.java) }
 
