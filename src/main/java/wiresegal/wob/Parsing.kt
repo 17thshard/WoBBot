@@ -11,27 +11,25 @@ import de.btobastian.javacord.entities.permissions.PermissionsBuilder
  * Created at 11:40 PM on 2/15/18.
  */
 
-val API_URL_MATCHER = "^https://wob\\.coppermind\\.net/api/\\w+/(\\d+)".toRegex()
-
 fun embedFromContent(titlePrefix: String, entry: Entry): EmbedBuilder {
-    val date = entry.event.date.split("-")
+    val date = entry.eventDate.split("-")
     val month = months[date[1].toInt() - 1]
-    val dateStr = "($month ${date[2]}, ${date[0]})"
+    val dateStr = "($month ${date[2].removePrefix("0")}, ${date[0]})"
 
-    val title = titlePrefix + entry.event.name + " " + dateStr
+    val title = titlePrefix + entry.eventName + " " + dateStr
 
     val embed = EmbedBuilder()
             .setColor(arcanumColor)
             .setTitle(title)
-            .setUrl("https://wob.coppermind.net/events/${API_URL_MATCHER.find(entry.event.url)!!.groupValues[1]}/#e${API_URL_MATCHER.find(entry.url)!!.groupValues[1]}")
+            .setUrl("$urlTarget/events/${entry.event}/#e${entry.id}")
             .setThumbnail(iconUrl)
 
     when {
-        entry.event.reviewState == ReviewState.PENDING ->
+        entry.eventState == ReviewState.PENDING ->
             embed.setDescription("__**Pending Review**__")
         entry.paraphrased ->
             embed.setDescription("__**Paraphrased**__")
-        entry.event.reviewState == ReviewState.APPROVED ->
+        entry.eventState == ReviewState.APPROVED ->
             embed.setDescription("**Approved**")
     }
 
@@ -50,7 +48,8 @@ fun embedFromContent(titlePrefix: String, entry: Entry): EmbedBuilder {
         val newJson = embed.toJsonNode()
         val footer = newJson.objectNode()
         footer.put("text", "(Too long to display. Check Arcanum for more.)")
-        val size = footer.toString().length - newJson.get("footer").toString().length
+        val oldFooter = newJson.get("footer")?.toString() ?: ""
+        val size = footer.toString().length - oldFooter.length
         if (newJson.toString().length > 2000 - size) {
             newJson.set("footer", footer)
             return FakeEmbedBuilder(newJson)
@@ -65,7 +64,7 @@ fun embedFromContent(titlePrefix: String, entry: Entry): EmbedBuilder {
 
 fun backupEmbed(title: String, entry: Entry): EmbedBuilder {
     val backup = EmbedBuilder().setColor(arcanumColor).setTitle(title)
-            .setUrl("https://wob.coppermind.net/events/${API_URL_MATCHER.find(entry.event.url)!!.groupValues[1]}/#e${API_URL_MATCHER.find(entry.url)!!.groupValues[1]}")
+            .setUrl("$urlTarget/events/${entry.event}/#e${entry.id}")
             .setThumbnail(iconUrl)
     backup.setDescription("This WoB is too long. Click on the link above to see it on Arcanum.")
     return backup

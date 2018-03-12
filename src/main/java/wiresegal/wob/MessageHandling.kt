@@ -62,7 +62,7 @@ fun actOnCreation(it: MessageCreateEvent) {
             } else if (trimmed == api.yourself.mentionTag)
                 about(message)
             else {
-                val allWobs = "wob\\.coppermind\\.net/events/[\\w-]+/#e(\\d+)".toRegex().findAll(content)
+                val allWobs = "#e(\\d+)".toRegex().findAll(content)
 
                 for (wob in allWobs) async {
                     val theWob = entryFromId(wob.groupValues[1].toInt())

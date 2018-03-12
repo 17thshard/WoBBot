@@ -6,4 +6,5 @@ package wiresegal.wob
  */
 
 val token: String = System.getenv("DISCORD_TOKEN")
-val arcanumToken: String = System.getenv("ARCANUM_TOKEN")
+val arcanumToken: String? = System.getenv("ARCANUM_TOKEN")
+val urlTarget = System.getenv("ARCANUM_URL") ?: "https://wob.coppermind.net"

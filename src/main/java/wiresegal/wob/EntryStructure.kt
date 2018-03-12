@@ -13,17 +13,16 @@ import java.net.URLEncoder
  * Created at 9:17 AM on 3/5/18.
  */
 
-val events: MutableMap<String, Event> = mutableMapOf()
-
-data class Entry(val url: String,
-            val event: Event,
-            val paraphrased: Boolean,
-            val note: String?,
-            val lines: List<Line>) {
+data class Entry(val id: String,
+                 val event: Int,
+                 val eventName: String,
+                 val eventDate: String,
+                 val eventState: ReviewState,
+                 val paraphrased: Boolean,
+                 val note: String?,
+                 val lines: List<Line>) {
     fun getFooterText(): String = Jsoup.parse(note).text()
 }
-
-data class Event(val url: String, val name: String, val date: String, val reviewState: ReviewState)
 
 enum class ReviewState {
     LEGACY, PENDING, APPROVED
@@ -37,11 +36,11 @@ fun apiRequest(type: String, vararg params: Pair<String, Any>): String {
     val allParams = mutableMapOf(*params)
     allParams["format"] = "json"
 
-    return Jsoup.connect("https://wob.coppermind.net/api/$type?" +
+    return Jsoup.connect("$urlTarget/api/$type?" +
             allParams.entries.joinToString("&") { "${it.key}=${it.value}" })
             .ignoreContentType(true)
             .header("Accept", "application/json; charset=utf-8")
-            .header("Authorization", "Token $arcanumToken")
+            .apply { if (arcanumToken != null) header("Authorization", "Token $arcanumToken") }
             .method(Connection.Method.GET)
             .execute().body()
 }
@@ -58,36 +57,16 @@ fun randomEntry(): Entry {
 
 fun entriesFromSearch(terms: List<String>): Pair<List<Entry>, Boolean> {
     val urlParams = terms.joinToString("+") { URLEncoder.encode(it, "UTF-8") }
-    val list = mutableListOf<Entry>()
-    val eventJson = apiRequest("search_entry", "ordering" to "rank", "page_size" to 250, "query" to urlParams)
+    val eventJson = apiRequest("search_entry",
+            "ordering" to "rank", "page_size" to 250, "query" to urlParams)
     val results = JsonParser().parse(eventJson).asJsonObject
-    results.getAsJsonArray("results").mapTo(list) { GSON.fromJson(it, Entry::class.java) }
-
-    return list to results.get("next").isJsonPrimitive
+    return results.getAsJsonArray("results").map { GSON.fromJson(it, Entry::class.java) } to !results.get("next").isJsonNull
 }
 
 val GSON: Gson = GsonBuilder()
         .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
-        .registerTypeHierarchyAdapter(Event::class.java, EventDeserializer)
         .registerTypeHierarchyAdapter(ReviewState::class.java, ReviewDeserializer)
         .create()
-
-private object EventDeserializer : JsonDeserializer<Event> {
-    private val GSON: Gson = GsonBuilder()
-            .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
-            .create()
-
-    override fun deserialize(json: JsonElement, type: Type, context: JsonDeserializationContext): Event {
-        if (json.isJsonPrimitive) {
-            return events.getOrPut(json.asString) {
-                val jsonBody = Jsoup.connect(json.asString).ignoreContentType(true).execute().body()
-                val jsonElement = JsonParser().parse(jsonBody)
-                context.deserialize(jsonElement, type)
-            }
-        }
-        return GSON.fromJson(json, type)
-    }
-}
 
 private object ReviewDeserializer : JsonDeserializer<ReviewState> {
     override fun deserialize(json: JsonElement, type: Type, context: JsonDeserializationContext) =
