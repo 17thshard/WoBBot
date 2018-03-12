@@ -121,7 +121,7 @@ fun about(message: Message) {
     val wire = api.getUserById(wireID)
     val wireStr = if (wire.isPresent) wire.get().mentionTag else "@wiresegal#1522"
     val host = api.owner
-    val hostStr = if (host.isPresent) host.get().mentionTag else "@wiresegal#1522"
+    val hostStr = if (host.isPresent) host.get().mentionTag else wireStr
 
     val add = if (hostStr != wireStr) "\nHosted by: $hostStr" else ""
 
@@ -129,17 +129,17 @@ fun about(message: Message) {
         setTitle("About WoBBot")
         setColor(arcanumColor)
 
-        setDescription("Commands: \n" +
-                " - `!wob`\n" +
-                " - `!wobrandom`\n" +
-                " - `Ask the Silent Gatherers`\n" +
-                " - `Consult the Diagram`\n" +
-                " - `Check the Gemstone Archives`\n" +
-                " - `!wobrank` (Admin only)\n" +
+        setDescription("**Commands:** \n" +
+                " * !wob\n" +
+                " * !wobrandom\n" +
+                (if (message.checkPermissions(BotRanks.ADMIN)) " * !wobrank (Admin only)\n\n" else "\n") +
+                " * Ask the Silent Gatherers\n" +
+                " * Consult the Diagram\n" +
+                " * Check the Gemstone Archives\n\n" +
                 "Author: $wireStr$add\n" +
                 "[Invite Link]($invite) | " +
                 "[Github Source](https://github.com/yrsegal/WoBBot) | " +
-                "[Arcanum](https://wob.coppermind.net/)")
+                "[Arcanum]($urlTarget)")
     })
 }
 

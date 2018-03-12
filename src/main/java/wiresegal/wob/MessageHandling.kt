@@ -123,7 +123,7 @@ fun actOnCreation(it: MessageCreateEvent) {
                     }
                 } else {
                     message.channel.sendMessage(EmbedBuilder().apply {
-                        setTitle("WoB Rank Details (Admin Only)")
+                        setTitle("WoB Rank Details _(Admin Only)_")
                         setColor(arcanumColor)
 
                         var roles = ""
@@ -138,8 +138,8 @@ fun actOnCreation(it: MessageCreateEvent) {
                         }
                         setDescription("Anyone with one of the whitelisted roles may use reactions as though they were the one who sent the message.\n\n" +
                                 "Usage:\n" +
-                                "`!wobrank add <Role Name>`\n" +
-                                "`!wobrank remove <Role Name>`" + roles)
+                                "* !wobrank add <Role Name>\n" +
+                                "* !wobrank remove <Role Name>" + roles)
                     })
                 }
             }
@@ -158,7 +158,7 @@ fun actOnCreation(it: MessageCreateEvent) {
         else if (noChrTrimmed.startsWith("checkthegemstonearchives"))
             message.channel.sendRandomEmbed(message.author, "Gemstone Archives", archive)
         else if (content == "express my opinion, wobbot") {
-            if (message.author.id == 77084495118868480L || message.checkPermissions(BotRanks.MANAGE_MESSAGES)) {
+            if (message.checkPermissions(BotRanks.MANAGE_MESSAGES)) {
                 message.delete()
                 message.channel.sendMessage("ಠ_ಠ")
             }
