@@ -29,7 +29,7 @@ enum class ReviewState {
 }
 
 data class Line(val speaker: String, val text: String) {
-    fun getTrueSpeaker(): String = Remark(Options.github().apply { inlineLinks = true }).convert(speaker)
+    fun getTrueSpeaker(): String = Jsoup.parse(speaker).text()
     fun getTrueText(): String = Remark(Options.github().apply { inlineLinks = true }).convert(text)
 }
 
