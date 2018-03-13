@@ -16,8 +16,8 @@ import java.net.URLEncoder
 data class Entry(val id: String,
                  val event: Int,
                  val eventName: String,
-                 val eventDate: String,
-                 val eventState: ReviewState,
+                 val date: String,
+                 val eventState: ReviewState?,
                  val paraphrased: Boolean,
                  val note: String?,
                  val lines: List<Line>) {

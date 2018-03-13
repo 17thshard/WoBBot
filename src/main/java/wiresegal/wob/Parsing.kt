@@ -12,7 +12,7 @@ import de.btobastian.javacord.entities.permissions.PermissionsBuilder
  */
 
 fun embedFromContent(titlePrefix: String, entry: Entry): EmbedBuilder {
-    val date = entry.eventDate.split("-")
+    val date = entry.date.split("-")
     val month = months[date[1].toInt() - 1]
     val dateStr = "($month ${date[2].removePrefix("0")}, ${date[0]})"
 
@@ -30,7 +30,7 @@ fun embedFromContent(titlePrefix: String, entry: Entry): EmbedBuilder {
         entry.paraphrased ->
             embed.setDescription("__**Paraphrased**__")
         entry.eventState == ReviewState.APPROVED ->
-            embed.setDescription("**Approved**")
+            embed.setDescription("_**Approved**_")
     }
 
     if (entry.note != null && entry.note.isNotBlank())

@@ -43,7 +43,8 @@ fun User.checkPermissions(id: Long?, channel: TextChannel, level: BotRanks): Boo
     val isImplicitManager = localPerms.getState(PermissionType.MANAGE_MESSAGES) == PermissionState.ALLOWED
     val isCreator = id == this.id
 
-    return if (level == BotRanks.ADMIN && !isAdmin) false
-    else if (level == BotRanks.MANAGE_MESSAGES && !(isManager || isImplicitManager)) false
-    else !(level == BotRanks.USER && !isCreator)
+    return if (level == BotRanks.ADMIN)
+        isAdmin
+    else
+        isManager || isImplicitManager || (level == BotRanks.USER && isCreator)
 }
