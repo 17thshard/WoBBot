@@ -29,6 +29,7 @@ enum class ReviewState {
 }
 
 data class Line(val speaker: String, val text: String) {
+    fun getTrueSpeaker(): String = Remark(Options.github().apply { inlineLinks = true }).convert(speaker)
     fun getTrueText(): String = Remark(Options.github().apply { inlineLinks = true }).convert(text)
 }
 
