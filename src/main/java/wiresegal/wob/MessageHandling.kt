@@ -5,6 +5,7 @@ import de.btobastian.javacord.entities.channels.TextChannel
 import de.btobastian.javacord.entities.message.Message
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder
 import de.btobastian.javacord.events.message.MessageCreateEvent
+import org.jsoup.Jsoup
 import java.awt.Color
 import java.util.*
 
@@ -168,5 +169,6 @@ fun handleContent(message: Message, line: String) {
             message.delete()
             message.channel.sendMessage("ಠ_ಠ")
         }
-    }
+    } else if (content == "thank you, wobbot")
+        message.channel.sendMessage(Jsoup.connect("https://cdn.discordapp.com/emojis/396521772691881987.png?v=1").ignoreContentType(true).execute().bodyStream(), "blush.png")
 }
