@@ -38,7 +38,7 @@ fun embedFromContent(titlePrefix: String, entry: Entry): EmbedBuilder {
 
     val arcanumSuffix = "*… (Check Arcanum for more.)*"
     for ((speaker, comment) in entry.lines.map {
-                val speaker = it.getTrueSpeaker()
+                val speaker = it.getTrueSpeaker().run { if (isEmpty()) "Context" else this }
                 val comment = it.getTrueText()
                 if (comment.length > 1024) speaker to comment.substring(0, 1024 - arcanumSuffix.length)
                         .replace("\\w+$".toRegex(), "").trim() + arcanumSuffix
