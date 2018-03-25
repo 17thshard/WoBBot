@@ -24,14 +24,14 @@ fun embedFromContent(titlePrefix: String, entry: Entry): EmbedBuilder {
             .setUrl("$urlTarget/events/${entry.event}/#e${entry.id}")
             .setThumbnail(iconUrl)
 
-    when {
-        entry.eventState == ReviewState.PENDING ->
-            embed.setDescription("__**Pending Review**__")
-        entry.paraphrased ->
-            embed.setDescription("__**Paraphrased**__")
-        entry.eventState == ReviewState.APPROVED ->
-            embed.setDescription("_**Approved**_")
-    }
+    val flags = mutableListOf<String>()
+
+    if (entry.eventState == ReviewState.PENDING) flags.add("__Pending Review__")
+    if (entry.paraphrased) flags.add("__Paraphrased__")
+    if (entry.eventState == ReviewState.APPROVED) flags.add("_Approved_")
+
+    if (flags.isNotEmpty())
+        embed.setDescription("**" + flags.joinToString() + "**")
 
     if (entry.note != null && entry.note.isNotBlank())
         embed.setFooter("Footnote: " + entry.getFooterText())
