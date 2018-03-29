@@ -6,6 +6,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import wiresegal.wob.*
 import java.time.Instant
+import java.util.*
 
 /**
  * @author WireSegal
@@ -14,16 +15,26 @@ import java.time.Instant
 
 var fetches = 0
 
-const val FROM_CACHE = true
+var verbose = true
 
 fun main(args: Array<String>) {
-    log("======= Starting parsing...")
+    val fromCache = System.getenv("LINTER_CACHE")?.toLowerCase()?.toBoolean() ?: run {
+        logForce("Do you want to load Arcanum from the last cached data? (y/n)")
+        Scanner(System.`in`).next("[ynYN]").toLowerCase() == "y"
+    }
+
+    verbose = System.getenv("LINTER_VERBOSE")?.toLowerCase()?.toBoolean() ?: run {
+        logForce("Do you want the log to be verbose? (y/n)")
+        Scanner(System.`in`).next("[ynYN]").toLowerCase() == "y"
+    }
+
+    logForce("========= Starting parsing...")
 
     var results: ArcanumDataSet? = null
 
     val arcanumCacheFile = fileInHome("arcanum_cache")
 
-    if (FROM_CACHE && arcanumCacheFile.exists()) {
+    if (fromCache && arcanumCacheFile.exists()) {
         log("Loading Arcanum data from cached file...")
         try {
             results = ArcanumDataSet(JsonParser().parse(arcanumCacheFile.reader()).asJsonObject)
@@ -51,7 +62,7 @@ fun main(args: Array<String>) {
         log("Finished writing to cache.")
     }
 
-    log("======= Parsing done. Collected " + results.results.size + " results!")
+    logForce("========= Parsing done. Collected " + results.results.size + " results!")
 
 
 
@@ -77,12 +88,17 @@ fun main(args: Array<String>) {
         it.lines.any { ".  " in it.text }
     }
 
-    println("Finished!")
+    logForce("========= Finished!")
 }
 
-fun log(data: Any?) = println("[${Instant.now()}] $data")
+fun logForce(data: Any?) = println((if (verbose) "[${Instant.now()}] " else "") + "$data")
 
-class ArcanumDataSet(data: JsonObject) {
+fun log(data: Any?) {
+    if (verbose)
+        logForce(data)
+
+
+}class ArcanumDataSet(data: JsonObject) {
     val results: List<Entry>
 
     init {
@@ -100,10 +116,13 @@ class ArcanumDataSet(data: JsonObject) {
     }
 
     fun printMatching(name: String, matcher: (Entry) -> Boolean) {
-        log("======= All entries which aren't in compliance with: $name")
+        logForce("======= All entries which aren't in compliance with: $name")
         for (entry in results)
             if (matcher(entry))
-                log("    $entry")
-        log("======= Finished scan for $name")
+                if (verbose)
+                    log("    $entry")
+                else
+                    logForce(entry.id)
+        logForce("======= Finished scan for $name")
     }
 }
