@@ -3,7 +3,9 @@ package wiresegal.wob
 import de.btobastian.javacord.DiscordApi
 import de.btobastian.javacord.DiscordApiBuilder
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder
+import de.btobastian.javacord.utils.logging.LoggerUtil
 import java.awt.Color
+import java.util.*
 
 /**
  * @author WireSegal
@@ -41,7 +43,22 @@ val permissions = SavedTypedMap(fileInHome("wob_bot_permissions"), { it.toString
         { _, value -> value.joinToString(",") }, { _, value -> value.split(",").mapNotNull { it.toLongOrNull() } })
 
 
+val version: String? by lazy {
+    try {
+        val propertyStream = EmbeddedInfo::class.java.getResourceAsStream("/git.properties")
+        val properties = Properties()
+        properties.load(propertyStream)
+
+        val property = properties.getProperty("git.commit.time")
+        if (property == "${'$'}{git.commit.time}") null else property
+    } catch (e: Exception) {
+        null
+    }
+}
+
 fun main(args: Array<String>) {
+    LoggerUtil.getLogger("WoB").debug("Running version built at $version")
+
     api.addMessageCreateListener(::actOnCreation)
     api.addReactionAddListener(::actOnReaction)
 }

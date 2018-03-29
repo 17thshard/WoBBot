@@ -125,6 +125,8 @@ fun about(message: Message) {
 
     val add = if (hostStr != wireStr) "\nHosted by: $hostStr" else ""
 
+    val versionStr = if (version != null) "\n\nLast updated: $version" else ""
+
     message.channel.sendMessage(EmbedBuilder().apply {
         setTitle("About WoBBot")
         setColor(arcanumColor)
@@ -139,7 +141,7 @@ fun about(message: Message) {
                 "Author: $wireStr$add\n" +
                 "[Invite Link]($invite) | " +
                 "[Github Source](https://github.com/yrsegal/WoBBot) | " +
-                "[Arcanum]($urlTarget)")
+                "[Arcanum]($urlTarget)$versionStr")
     })
 }
 
