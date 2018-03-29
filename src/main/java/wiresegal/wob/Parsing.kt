@@ -21,7 +21,7 @@ fun embedFromContent(titlePrefix: String, entry: Entry): EmbedBuilder {
     val embed = EmbedBuilder()
             .setColor(arcanumColor)
             .setTitle(title)
-            .setUrl("$urlTarget/events/${entry.event}/#e${entry.id}")
+            .setUrl(entry.toString())
             .setThumbnail(iconUrl)
 
     val flags = mutableListOf<String>()
@@ -64,7 +64,7 @@ fun embedFromContent(titlePrefix: String, entry: Entry): EmbedBuilder {
 
 fun backupEmbed(title: String, entry: Entry): EmbedBuilder {
     val backup = EmbedBuilder().setColor(arcanumColor).setTitle(title)
-            .setUrl("$urlTarget/events/${entry.event}/#e${entry.id}")
+            .setUrl(entry.toString())
             .setThumbnail(iconUrl)
     backup.setDescription("This WoB is too long. Click on the link above to see it on Arcanum.")
     return backup

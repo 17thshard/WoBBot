@@ -10,7 +10,7 @@ import java.io.File
  */
 fun fileInHome(name: String): File {
     val home = System.getProperty("user.home")
-    return File(home, "." + name)
+    return File(home, ".$name")
 }
 
 class FakeEmbedBuilder(val json: ObjectNode) : EmbedBuilder() {

@@ -22,6 +22,8 @@ data class Entry(val id: String,
                  val note: String?,
                  val lines: List<Line>) {
     fun getFooterText(): String = Jsoup.parse(note).text()
+
+    override fun toString() = "$urlTarget/events/$event/#e$id"
 }
 
 enum class ReviewState {
@@ -33,17 +35,21 @@ data class Line(val speaker: String, val text: String) {
     fun getTrueText(): String = Remark(Options.github().apply { inlineLinks = true }).convert(text)
 }
 
-fun apiRequest(type: String, vararg params: Pair<String, Any>): String {
-    val allParams = mutableMapOf(*params)
-    allParams["format"] = "json"
-
-    return Jsoup.connect("$urlTarget/api/$type?" +
-            allParams.entries.joinToString("&") { "${it.key}=${it.value}" })
+fun nakedApiRequest(url: String): String {
+    return Jsoup.connect(url)
             .ignoreContentType(true)
             .header("Accept", "application/json; charset=utf-8")
             .apply { if (arcanumToken != null) header("Authorization", "Token $arcanumToken") }
             .method(Connection.Method.GET)
             .execute().body()
+}
+
+fun apiRequest(type: String, vararg params: Pair<String, Any>): String {
+    val allParams = mutableMapOf(*params)
+    allParams["format"] = "json"
+
+    return nakedApiRequest("$urlTarget/api/$type?" +
+            allParams.entries.joinToString("&") { "${it.key}=${it.value}" })
 }
 
 fun entryFromId(id: Int): Entry {
