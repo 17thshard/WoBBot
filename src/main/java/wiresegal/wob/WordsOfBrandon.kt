@@ -13,7 +13,9 @@ import java.awt.Color
 val arcanumColor = Color(0x003A52)
 const val iconUrl = "https://cdn.discordapp.com/emojis/373082865073913859.png?v=1"
 
-lateinit var api: DiscordApi
+private val apiProvider = DiscordApiBuilder().setToken(token).login()
+
+val api: DiscordApi by lazy { apiProvider.join() }
 
 data class EmbeddedInfo(val user: Long, val channel: Long, val index: Int, val embeds: List<EmbedBuilder>)
 
@@ -40,8 +42,6 @@ val permissions = SavedTypedMap(fileInHome("wob_bot_permissions"), { it.toString
 
 
 fun main(args: Array<String>) {
-    api = DiscordApiBuilder().setToken(token!!).login().join()
-
     api.addMessageCreateListener(::actOnCreation)
     api.addReactionAddListener(::actOnReaction)
 }
