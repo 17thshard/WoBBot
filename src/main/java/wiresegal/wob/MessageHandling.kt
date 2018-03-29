@@ -53,7 +53,7 @@ fun TextChannel.sendRandomEmbed(requester: DiscordEntity, title: String, message
 fun actOnCreation(it: MessageCreateEvent) {
     val message = it.message
     if (!message.userAuthor.orElseGet { api.yourself }.isBot) {
-        message.content.split("(?=!)".toRegex()).forEach { handleContent(message, it) }
+        message.content.split("(?<=.|\n)(?=!)".toRegex()).forEach { handleContent(message, it) }
     }
 }
 
