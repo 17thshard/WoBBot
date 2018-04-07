@@ -58,19 +58,19 @@ val gitProperties: Properties by lazy {
 
 val version: String? by lazy {
     val property = gitProperties.getProperty("git.commit.time")
-    if (property.contains("$")) null else property
+    if (property == null || property.contains("$")) null else property
 }
 val commitId: String? by lazy {
     val property = gitProperties.getProperty("git.commit.id.abbrev")
-    if (property.contains("$")) null else property
+    if (property == null || property.contains("$")) null else property
 }
 val commitDesc: String? by lazy {
     val property = gitProperties.getProperty("git.commit.message.short")
-    if (property.contains("$")) null else property
+    if (property == null || property.contains("$")) null else property
 }
 val committer: String? by lazy {
     val property = gitProperties.getProperty("git.commit.user.name")
-    if (property.contains("$")) null else property
+    if (property == null || property.contains("$")) null else property
 }
 
 fun main(args: Array<String>) {
