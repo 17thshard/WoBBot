@@ -125,8 +125,6 @@ fun about(message: Message) {
 
     val add = if (hostStr != wireStr) "\nHosted by: $hostStr" else ""
 
-    val versionStr = if (version != null) "\n\nLast updated: $version" else ""
-
     message.channel.sendMessage(EmbedBuilder().apply {
         setTitle("About WoBBot")
         setColor(arcanumColor)
@@ -141,8 +139,27 @@ fun about(message: Message) {
                 "Author: $wireStr$add\n" +
                 "[Invite Link]($invite) | " +
                 "[Github Source](https://github.com/yrsegal/WoBBot) | " +
-                "[Arcanum]($urlTarget)$versionStr")
+                "[Arcanum]($urlTarget)")
     })
+}
+
+fun notifyOwners() {
+    val embed = EmbedBuilder().apply {
+        setColor(arcanumColor)
+        setTitle("Launch Notification")
+        addField("Last Commit", "$commitDesc ($commitId)", false)
+        addField("Committer", committer, false)
+        addField("Commit Time", version, false)
+        setTimestamp()
+    }
+
+    val wireID = 77084495118868480L
+    val wire = api.getUserById(wireID)
+
+    if (wire.isPresent)
+        wire.get().sendMessage(embed)
+    if (api.owner.isPresent && api.ownerId != wireID)
+        api.owner.get().sendMessage(embed)
 }
 
 

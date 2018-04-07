@@ -43,21 +43,40 @@ val permissions = SavedTypedMap(fileInHome("wob_bot_permissions"), { it.toString
         { _, value -> value.joinToString(",") }, { _, value -> value.split(",").mapNotNull { it.toLongOrNull() } })
 
 
-val version: String? by lazy {
+val gitProperties: Properties by lazy {
+    val properties = Properties()
+
     try {
         val propertyStream = EmbeddedInfo::class.java.getResourceAsStream("/git.properties")
-        val properties = Properties()
         properties.load(propertyStream)
-
-        val property = properties.getProperty("git.commit.time")
-        if (property == "${'$'}{git.commit.time}") null else property
     } catch (e: Exception) {
-        null
+        // NO-OP
     }
+
+    properties
+}
+
+val version: String? by lazy {
+    val property = gitProperties.getProperty("git.commit.time")
+    if (property.contains("$")) null else property
+}
+val commitId: String? by lazy {
+    val property = gitProperties.getProperty("git.commit.id.abbrev")
+    if (property.contains("$")) null else property
+}
+val commitDesc: String? by lazy {
+    val property = gitProperties.getProperty("git.commit.message.short")
+    if (property.contains("$")) null else property
+}
+val committer: String? by lazy {
+    val property = gitProperties.getProperty("git.commit.user.name")
+    if (property.contains("$")) null else property
 }
 
 fun main(args: Array<String>) {
     LoggerUtil.getLogger("WoB").debug("Running version built at $version")
+
+    notifyOwners()
 
     api.addMessageCreateListener(::actOnCreation)
     api.addReactionAddListener(::actOnReaction)
