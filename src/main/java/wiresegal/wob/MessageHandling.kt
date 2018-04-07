@@ -61,12 +61,10 @@ fun handleContent(message: Message, line: String) {
     val content = line.toLowerCase(Locale.ROOT).trim()
     val trimmed = content.replace("\\s".toRegex(), "")
     val noChrTrimmed = trimmed.replace("\\W".toRegex(), "")
-    if (trimmed != "!wobabout" && (message.privateChannel.isPresent ||
-                    content == "!wob" || content.startsWith("!wob ") || message.mentionedUsers.any { it.isYourself })) {
-        if (trimmed == "!wobhelp" || trimmed == api.yourself.mentionTag + "help" ||
-                trimmed == "!wob") {
+    if (content == "!wob" || content.startsWith("!wob ") || message.mentionedUsers.any { it.isYourself }) {
+        if (trimmed == "!wobhelp" || trimmed == api.yourself.mentionTag + " help" || trimmed == "!wob") { // Asking for help
             message.channel.sendMessage("Use `!wob \"term\"` to search, or put a WoB link in to get its text directly.")
-        } else if (trimmed == api.yourself.mentionTag)
+        } else if (trimmed == api.yourself.mentionTag) // About
             about(message)
         else {
             val allWobs = "#e(\\d+)".toRegex().findAll(content)
@@ -92,63 +90,60 @@ fun handleContent(message: Message, line: String) {
         about(message)
     else if (trimmed == "!wobrandom") async {
         message.channel.sendMessage(embedFromContent("", randomEntry())).get().setupDeletable(message.author)
-    } else if (trimmed.startsWith("!wobrank") && message.checkPermissions(BotRanks.ADMIN)) {
-        val serverHolder = message.server
-        if (serverHolder.isPresent) {
-            val server = serverHolder.get()
-            val add = trimmed.startsWith("!wobrankadd")
-            val remove = trimmed.startsWith("!wobrankremove")
+    } else if (message.server.isPresent && trimmed.startsWith("!wobrank") && message.checkPermissions(BotRanks.ADMIN)) {
+        val server = message.server.get()
+        val add = trimmed.startsWith("!wobrankadd")
+        val remove = trimmed.startsWith("!wobrankremove")
 
-            if (add || remove) {
-                val roleName = if (add)
-                    trimmed.removePrefix("!wobrankadd")
-                else
-                    trimmed.removePrefix("!wobrankremove")
-                val role = server.roles.firstOrNull { it.name.toLowerCase().replace("\\s+".toRegex(), "") == roleName }
-                if (role != null) {
-                    val list = permissions.getOrElse(server.id) { listOf() }
-                    if (add) {
-                        if (role.id in list)
-                            message.channel.sendMessage("Role ${role.name} already had reaction control.")
-                        else {
-                            val newList = list.toMutableSet().apply { add(role.id) }.toList()
+        if (add || remove) {
+            val roleName = if (add)
+                trimmed.removePrefix("!wobrankadd")
+            else
+                trimmed.removePrefix("!wobrankremove")
+            val role = server.roles.firstOrNull { it.name.toLowerCase().replace("\\s+".toRegex(), "") == roleName }
+            if (role != null) {
+                val list = permissions.getOrElse(server.id) { listOf() }
+                if (add) {
+                    if (role.id in list)
+                        message.channel.sendMessage("Role ${role.name} already had reaction control.")
+                    else {
+                        val newList = list.toMutableSet().apply { add(role.id) }.toList()
+                        permissions[server.id] = newList
+                        message.channel.sendMessage("Gave the role ${role.name} reaction control.")
+                    }
+                } else {
+                    if (role.id !in list)
+                        message.channel.sendMessage("Role ${role.name} didn't have reaction control.")
+                    else {
+                        val newList = list.toMutableSet().apply { remove(role.id) }.toList()
+                        if (newList.isEmpty())
+                            permissions.remove(server.id)
+                        else
                             permissions[server.id] = newList
-                            message.channel.sendMessage("Gave the role ${role.name} reaction control.")
-                        }
-                    } else {
-                        if (role.id !in list)
-                            message.channel.sendMessage("Role ${role.name} didn't have reaction control.")
-                        else {
-                            val newList = list.toMutableSet().apply { remove(role.id) }.toList()
-                            if (newList.isEmpty())
-                                permissions.remove(server.id)
-                            else
-                                permissions[server.id] = newList
-                            message.channel.sendMessage("Removed the role ${role.name} from reaction control.")
-                        }
+                        message.channel.sendMessage("Removed the role ${role.name} from reaction control.")
                     }
                 }
-            } else {
-                message.channel.sendMessage(EmbedBuilder().apply {
-                    setTitle("WoB Rank Details _(Admin Only)_")
-                    setColor(arcanumColor)
-
-                    var roles = ""
-
-                    val allRoles = permissions[server.id]
-                    if (allRoles != null) {
-                        val rolesInServer = server.roles.filter { it.id in allRoles }
-                        if (rolesInServer.isNotEmpty()) {
-                            roles += "\n\nAllowed: \n"
-                            roles += rolesInServer.joinToString("\n") { it.mentionTag }
-                        }
-                    }
-                    setDescription("Anyone with one of the whitelisted roles may use reactions as though they were the one who sent the message.\n\n" +
-                            "Usage:\n" +
-                            "* !wobrank add <Role Name>\n" +
-                            "* !wobrank remove <Role Name>" + roles)
-                })
             }
+        } else {
+            message.channel.sendMessage(EmbedBuilder().apply {
+                setTitle("WoB Rank Details _(Admin Only)_")
+                setColor(arcanumColor)
+
+                var roles = ""
+
+                val allRoles = permissions[server.id]
+                if (allRoles != null) {
+                    val rolesInServer = server.roles.filter { it.id in allRoles }
+                    if (rolesInServer.isNotEmpty()) {
+                        roles += "\n\nAllowed: \n"
+                        roles += rolesInServer.joinToString("\n") { it.mentionTag }
+                    }
+                }
+                setDescription("Anyone with one of the whitelisted roles may use reactions as though they were the one who sent the message.\n\n" +
+                        "Usage:\n" +
+                        "* !wobrank add <Role Name>\n" +
+                        "* !wobrank remove <Role Name>" + roles)
+            })
         }
     } else if (noChrTrimmed.startsWith("saythewords"))
         message.channel.sendMessage("**`Life before death.`**\n" +
