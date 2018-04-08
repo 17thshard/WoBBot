@@ -88,7 +88,7 @@ fun harvestFromSearch(terms: List<String>): List<EmbedBuilder> {
     return allEmbeds
 }
 
-fun search(message: Message, terms: List<String>) {
+fun searchWoB(message: Message, terms: List<String>) {
     val waiting = message.channel.sendMessage("Searching for \"${terms.joinToString().replace("&!", "!")}\"...").get()
     val type = message.channel.typeContinuously()
     try {
@@ -133,6 +133,7 @@ fun about(message: Message) {
                 " * !wob\n" +
                 " * !wobrandom\n" +
                 (if (message.checkPermissions(BotRanks.ADMIN)) " * !wobrank (Admin only)\n\n" else "\n") +
+                " * !coppermind\n" +
                 " * Ask the Silent Gatherers\n" +
                 " * Consult the Diagram\n" +
                 " * Check the Gemstone Archives\n\n" +

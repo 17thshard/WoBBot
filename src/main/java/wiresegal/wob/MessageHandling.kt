@@ -73,19 +73,31 @@ fun handleContent(message: Message, line: String) {
                 val theWob = entryFromId(wob.groupValues[1].toInt())
                 message.channel.sendMessage(embedFromContent("", theWob)).get().setupDeletable(message.author)
             }
-            val contentModified = if (message.privateChannel.isPresent && "^[\\w\\s,+!|&]+$".toRegex().matches(content))
-                "\"" + content + "\"" else content
 
-            val terms = "[\"“]([\\w\\s,+!|&]+)[\"”]".toRegex().findAll(contentModified).toList()
+            val terms = "[\"“]([\\w\\s,+!|&]+)[\"”]".toRegex().findAll(content).toList()
                     .flatMap {
                         it.groupValues[1]
                                 .replace("([^&])!".toRegex(), "$1&!")
                                 .split("[\\s,]+".toRegex())
                     }.filter { it.matches("[!+|&\\w]+".toRegex()) }
             if (terms.any()) async {
-                search(message, terms)
+                searchWoB(message, terms)
             }
         }
+    } else if (trimmed.startsWith("!cm") || trimmed.startsWith("!coppermind")) {
+        if (trimmed == "!cm" || trimmed == "!coppermind")
+            message.channel.sendMessage("Use `$trimmed \"term\"` to search.")
+        else {
+            val terms = "[\"“]([\\w\\s,]+)[\"”]".toRegex().findAll(content).toList()
+                    .flatMap {
+                        it.groupValues[1].split("[\\s,]+".toRegex())
+                    }.filter { it.matches("[!+|&\\w]+".toRegex()) }
+
+            if (terms.any()) async {
+                searchCoppermind(message, terms)
+            }
+        }
+
     } else if (trimmed == "!wobabout")
         about(message)
     else if (trimmed == "!wobrandom") async {
