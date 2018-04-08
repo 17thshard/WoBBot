@@ -29,7 +29,7 @@ fun Remark.convert(node: Node, base: String): String = convertFragment(node.toSt
 
 class Coppermind : Wiki("coppermind.net") {
     fun getSectionHTML(title: String): String {
-        return parse(wiki.getSectionText(title, 0))
+        return parse(wiki.getSectionText(title, 0)).replace("API", title.replace("[+_]".toRegex(), " "))
     }
 
     fun getDocument(title: String): Document {
@@ -52,15 +52,16 @@ fun fetchPreview(searchInfo: String): Pair<List<String>, String> {
     return notices to md
 }
 
-fun searchResults(searchInfo: String): List<String> {
-    return if (wiki.getPageInfo(searchInfo)["exists"] as Boolean)
-        listOf(wiki.resolveRedirect(searchInfo) ?: searchInfo)
+fun searchResults(searchInfo: String): Pair<Boolean, List<String>> {
+    return if (wiki.getPageInfo(searchInfo.replace("+", "_"))["exists"] as Boolean)
+        false to listOf(wiki.resolveRedirect(searchInfo.replace("+", "_")) ?: searchInfo.replace("+", "_"))
     else {
         val search = searchInfo.split("\\s+".toRegex())
-        val articles = wiki.search(searchInfo)
+        val allArticles = wiki.search(searchInfo)
                 .map { it.first() }
+        val articles = allArticles.take(10)
         val redirected = wiki.resolveRedirects(articles.toTypedArray())
-        redirected.mapIndexed { idx, it -> it ?: articles[idx] }
+        (articles.size != allArticles.size) to redirected.mapIndexed { idx, it -> it ?: articles[idx] }
                 .toSet()
                 .sortedBy { search.count { term -> term in it } }
     }
@@ -70,16 +71,17 @@ fun searchResults(searchInfo: String): List<String> {
 fun embedFromWiki(titlePrefix: String, name: String, entry: Pair<List<String>, String>): EmbedBuilder {
     val (notices, body) = entry
 
-    val title = titlePrefix + name
+    val title = titlePrefix + name.replace("+", " ")
 
     val embed = EmbedBuilder()
             .setColor(coppermindColor)
             .setTitle(title)
-            .setUrl("https://coppermind.net/wiki/" + name.replace(" ", "_"))
+            .setUrl("https://coppermind.net/wiki/" + name.replace("+", "_"))
             .setThumbnail(coppermindIcon)
 
-    val description = notices.toMutableList()
+    val description = mutableListOf<String>()
 
+    notices.mapTo(description) { "**$it**" }
     description.add(body)
 
     embed.setDescription(description.joinToString("\n\n"))
@@ -91,21 +93,21 @@ fun embedFromWiki(titlePrefix: String, name: String, entry: Pair<List<String>, S
 }
 
 fun backupEmbed(title: String, name: String): EmbedBuilder {
-    return EmbedBuilder().setColor(coppermindColor).setTitle(title)
+    return EmbedBuilder().setColor(coppermindColor).setTitle(title + name.replace("+", " "))
             .setUrl("https://coppermind.net/wiki/" + name.replace(" ", "_"))
-            .setThumbnail(coppermindIcon)
+            .setThumbnail(coppermindIcon).setDescription("An error occurred in loading the wiki preview.")
 }
 
 fun harvestFromWiki(terms: List<String>): List<EmbedBuilder> {
-    val allArticles = searchResults(terms.joinToString("+")).map { it to fetchPreview(it) }
+    val (large, rawArticles) = searchResults(terms.joinToString("+"))
+    val allArticles = rawArticles.map { it to fetchPreview(it) }
     val allEmbeds = mutableListOf<EmbedBuilder>()
-    val large = allArticles.size > 20
 
-    val size = if (large) "... (250)" else allArticles.size.toString()
+    val size = if (large) "... (10)" else allArticles.size.toString()
 
     for ((idx, article) in allArticles.withIndex()) {
         val (name, body) = article
-        val titleText = "Search: \"${terms.joinToString()}\" (${idx+1}/$size) \n"
+        val titleText = "Search: \"${terms.joinToString(" ")}\" (${idx+1}/$size) \n"
         allEmbeds.add(embedFromWiki(titleText, name, body))
     }
 
@@ -113,7 +115,7 @@ fun harvestFromWiki(terms: List<String>): List<EmbedBuilder> {
 }
 
 fun searchCoppermind(message: Message, terms: List<String>) {
-    val waiting = message.channel.sendMessage("Searching for \"${terms.joinToString()}\"...").get()
+    val waiting = message.channel.sendMessage("Searching for \"${terms.joinToString(" ")}\"...").get()
     val type = message.channel.typeContinuously()
     try {
         val allEmbeds = harvestFromWiki(terms)
@@ -121,7 +123,7 @@ fun searchCoppermind(message: Message, terms: List<String>) {
         type.close()
 
         when {
-            allEmbeds.isEmpty() -> message.channel.sendMessage("Couldn't find any articles for \"${terms.joinToString()}\".")
+            allEmbeds.isEmpty() -> message.channel.sendMessage("Couldn't find any articles for \"${terms.joinToString(" ")}\".")
             allEmbeds.size == 1 -> {
                 val finalEmbed = allEmbeds.first()
                 finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))

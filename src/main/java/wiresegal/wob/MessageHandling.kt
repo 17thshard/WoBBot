@@ -92,6 +92,7 @@ fun handleContent(message: Message, line: String) {
                     .flatMap {
                         it.groupValues[1].split("[\\s,]+".toRegex())
                     }.filter { it.matches("[!+|&\\w]+".toRegex()) }
+                    .map { it.toLowerCase().capitalize() }
 
             if (terms.any()) async {
                 searchCoppermind(message, terms)
