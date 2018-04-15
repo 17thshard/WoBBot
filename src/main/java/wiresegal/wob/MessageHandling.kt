@@ -88,10 +88,10 @@ fun handleContent(message: Message, line: String) {
         if (trimmed == "!cm" || trimmed == "!coppermind")
             message.channel.sendMessage("Use `$trimmed \"term\"` to search.")
         else {
-            val terms = "[\"“]([\\w\\s,]+)[\"”]".toRegex().findAll(content).toList()
+            val terms = "[\"“]([/\\w\\s,]+)[\"”]".toRegex().findAll(content).toList()
                     .flatMap {
                         it.groupValues[1].split("[\\s,]+".toRegex())
-                    }.filter { it.matches("[!+|&\\w]+".toRegex()) }
+                    }.filter { it.matches("[/\\w]+".toRegex()) }
                     .map { it.toLowerCase().capitalize() }
 
             if (terms.any()) async {
