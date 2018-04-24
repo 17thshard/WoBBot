@@ -26,7 +26,7 @@ open class SavedMap(val location: File, private val backingMap: MutableMap<Strin
 
     init {
         @Suppress("LeakingThis")
-        load()
+        load(true)
     }
 
     override fun clear() = synchronized(lock) {
@@ -35,27 +35,28 @@ open class SavedMap(val location: File, private val backingMap: MutableMap<Strin
     }
 
     override fun put(key: String, value: String): String? = synchronized(lock) {
-        load()
+        load(false)
         val ret = backingMap.put(key, value)
         save()
         return ret
     }
 
     override fun putAll(from: Map<out String, String>) = synchronized(lock) {
-        load()
+        load(false)
         backingMap.putAll(from)
         save()
     }
 
     override fun remove(key: String): String? = synchronized(lock) {
-        load()
+        load(false)
         val ret = backingMap.remove(key)
         save()
         return ret
     }
 
-    protected fun fillDirect(from: Map<out String, String>) {
-        backingMap.clear()
+    protected fun fillDirect(from: Map<out String, String>, purge: Boolean) {
+        if (purge)
+            backingMap.clear()
         backingMap.putAll(from)
     }
 
@@ -65,12 +66,12 @@ open class SavedMap(val location: File, private val backingMap: MutableMap<Strin
                 .joinToString("\n") + if (backingMap.any()) "\n" else "")
     }
 
-    protected open fun load() {
+    protected open fun load(purge: Boolean) {
         location.createNewFile()
         val text = location.readText()
         val entries = text.split("\n").map { it.split("::").map { it.replace("\\:", ":") } }.filter { it.size > 1 }
         val map = entries.associate { it[0] to it[1] }.toMutableMap()
-        fillDirect(map)
+        fillDirect(map, purge)
     }
 }
 
@@ -94,7 +95,7 @@ class SavedTypedMap<K : Any, V : Any>(location: File,
 
     override fun put(key: K, value: V): V? = synchronized(lock) {
         if (persistentLoad)
-            internalMap.load()
+            internalMap.load(false)
         val ret = backingMap.put(key, value)
         internalMap.save()
         return ret
@@ -102,14 +103,14 @@ class SavedTypedMap<K : Any, V : Any>(location: File,
 
     override fun putAll(from: Map<out K, V>) = synchronized(lock) {
         if (persistentLoad)
-            internalMap.load()
+            internalMap.load(false)
         backingMap.putAll(from)
         internalMap.save()
     }
 
     override fun remove(key: K): V? = synchronized(lock) {
         if (persistentLoad)
-            internalMap.load()
+            internalMap.load(false)
         val ret = backingMap.remove(key)
         internalMap.save()
         return ret
@@ -117,13 +118,14 @@ class SavedTypedMap<K : Any, V : Any>(location: File,
 
     private inner class SavedBackingMap(location: File) : SavedMap(location) {
         public override fun save() {
-            fillDirect(backingMap.map { serializeKey(it.key) to serializeValue(it.key, it.value) }.toMap())
+            fillDirect(backingMap.map { serializeKey(it.key) to serializeValue(it.key, it.value) }.toMap(), false)
             super.save()
         }
 
-        public override fun load() {
-            super.load()
-            backingMap.clear()
+        public override fun load(purge: Boolean) {
+            super.load(purge)
+            if (purge)
+                backingMap.clear()
             backingMap.putAll(mapNotNull {
                 val k = deserializeKey(it.key)
                 if (k != null) {

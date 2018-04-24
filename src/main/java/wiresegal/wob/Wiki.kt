@@ -76,7 +76,7 @@ fun embedFromWiki(titlePrefix: String, name: String, entry: Pair<List<String>, S
     val embed = EmbedBuilder()
             .setColor(coppermindColor)
             .setTitle(title)
-            .setUrl("https://coppermind.net/wiki/" + name.replace("+", "_"))
+            .setUrl("https://coppermind.net/wiki/" + name.replace("[+\\s]".toRegex(), "_"))
             .setThumbnail(coppermindIcon)
 
     val description = mutableListOf<String>()
@@ -84,17 +84,22 @@ fun embedFromWiki(titlePrefix: String, name: String, entry: Pair<List<String>, S
     notices.mapTo(description) { "**$it**" }
     description.add(body)
 
-    embed.setDescription(description.joinToString("\n\n"))
+    var desc = description.joinToString("\n\n")
+    if (desc.length > 1600)
+        desc = desc.substring(0, "\\.[\"”'’]?\\s".toRegex().findAll(desc)
+                .last { it.range.start <= 1600 }.range.endInclusive)
+
+    embed.setDescription(desc)
 
     if (embed.toJsonNode().toString().length > 2000)
-        return backupEmbed(title, name)
+        return backupEmbed(titlePrefix, name)
 
     return embed
 }
 
 fun backupEmbed(title: String, name: String): EmbedBuilder {
     return EmbedBuilder().setColor(coppermindColor).setTitle(title + name.replace("+", " "))
-            .setUrl("https://coppermind.net/wiki/" + name.replace(" ", "_"))
+            .setUrl("https://coppermind.net/wiki/" + name.replace("[+\\s]".toRegex(), "_"))
             .setThumbnail(coppermindIcon).setDescription("An error occurred in loading the wiki preview.")
 }
 
