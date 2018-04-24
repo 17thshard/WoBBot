@@ -42,6 +42,8 @@ fun fetchPreview(searchInfo: String): Pair<List<String>, String> {
     x.getElementsByClass("infobox").forEach(Element::remove)
     x.getElementsByClass("reference").forEach(Element::remove)
     x.getElementsByClass("mw-references-wrap").forEach(Element::remove)
+    x.getElementsByClass("thumb").forEach(Element::remove)
+
 
     val allNotices = x.getElementsByClass("notice")
     allNotices.forEach(Element::remove)
