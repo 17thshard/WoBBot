@@ -85,7 +85,12 @@ fun fetchPreview(searchInfo: String): Pair<List<String>, String> {
     }
 
     val notices = allNotices.filter { it.childNodeSize() > 0 }.map { wikiMarkup.convert(it.child(0), "https://coppermind.net") }
-    val md = wikiMarkup.convert(sectionNodes, "https://coppermind.net").split("(?<!\\*\\*”\\*\\*)\n{2,}".toRegex()).take(2).joinToString("\n\n")
+    var splits = wikiMarkup.convert(sectionNodes, "https://coppermind.net").split("(?<!\\*\\*”\\*\\*)\n{2,}".toRegex())
+
+    if (splits.none { "http://en.wikipedia.org/wiki/Help:Disambiguation" in it })
+        splits = splits.take(2)
+
+    val md = splits.joinToString("\n\n")
 
     return notices to md
 }
