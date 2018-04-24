@@ -25,38 +25,74 @@ val wikiMarkup = Remark(Options.github().apply { inlineLinks = true; preserveRel
 val coppermindColor = Color(0xCB6D51)
 const val coppermindIcon = "https://cdn.discordapp.com/emojis/432391749550342145.png?v=1"
 
+fun Remark.convert(node: List<Node>, base: String): String = convertFragment(node.joinToString(""), base)
 fun Remark.convert(node: Node, base: String): String = convertFragment(node.toString(), base)
 
 class Coppermind : Wiki("coppermind.net") {
+
     fun getSectionHTML(title: String): String {
-        return parse(wiki.getSectionText(title, 0)).replace("API", title.replace("[+_]".toRegex(), " "))
+        return parse(getPageText(title)).replace("API", title.replace("[+_]".toRegex(), " "))
     }
 
     fun getDocument(title: String): Document {
         return Jsoup.parse(getSectionHTML(title), "https://coppermind.net")
     }
+
+    fun resolveFragmentRedirect(title: String) = resolveFragmentRedirect(arrayOf(title))[0]
+
+    fun resolveFragmentRedirect(titles: Array<String>): Array<String?> {
+        val url = StringBuilder(query)
+        if (!isResolvingRedirects)
+            url.append("redirects&")
+        url.append("titles=")
+        val ret = arrayOfNulls<String>(titles.size)
+        val temp = constructTitleString(titles)
+        for (blah in temp) {
+            val line = fetch(url.toString() + blah, "resolveRedirects")
+            var j = line.indexOf("<r ")
+            while (j > 0) {
+                val parsedtitle = parseAttribute(line, "from", j)
+                for (i in titles.indices)
+                    if (normalize(titles[i]) == parsedtitle)
+                        ret[i] = parseAttribute(line, "to", j) + "#" + parseAttribute(line, "tofragment", j)
+                j = line.indexOf("<r ", ++j)
+            }
+        }
+        return ret
+    }
 }
 
 fun fetchPreview(searchInfo: String): Pair<List<String>, String> {
     val x = wiki.getDocument(searchInfo)
+    val body = x.body()
+    val allNotices = body.children().takeWhile { it.hasClass("notice") }
+    allNotices.forEach(Element::remove)
     x.getElementsByClass("infobox").forEach(Element::remove)
     x.getElementsByClass("reference").forEach(Element::remove)
     x.getElementsByClass("mw-references-wrap").forEach(Element::remove)
     x.getElementsByClass("thumb").forEach(Element::remove)
 
+    val sectionHeader = if ('#' in searchInfo)
+        x.getElementById(searchInfo.split("#")[1].replace("[+\\s]".toRegex(), "_")).parent()
+    else
+        body.child(0)
 
-    val allNotices = x.getElementsByClass("notice")
-    allNotices.forEach(Element::remove)
+    val sectionNodes = mutableListOf<Element>()
+    var next = sectionHeader.nextElementSibling()
+    while (next != null && !next.tagName().startsWith("h")) {
+        sectionNodes.add(next)
+        next = next.nextElementSibling()
+    }
 
     val notices = allNotices.filter { it.childNodeSize() > 0 }.map { wikiMarkup.convert(it.child(0), "https://coppermind.net") }
-    val md = wikiMarkup.convert(x).split("(?<!\\*\\*”\\*\\*)\n{2,}".toRegex()).take(2).joinToString("\n\n")
+    val md = wikiMarkup.convert(sectionNodes, "https://coppermind.net").split("(?<!\\*\\*”\\*\\*)\n{2,}".toRegex()).take(2).joinToString("\n\n")
 
     return notices to md
 }
 
 fun searchResults(searchInfo: String): Pair<Boolean, List<String>> {
-    return if (wiki.getPageInfo(searchInfo.replace("+", "_"))["exists"] as Boolean)
-        false to listOf(wiki.resolveRedirect(searchInfo.replace("+", "_")) ?: searchInfo.replace("+", "_"))
+    return if (wiki.getPageInfo(searchInfo.replace("[+\\s]".toRegex(), "_"))["exists"] as Boolean)
+        false to listOf(wiki.resolveFragmentRedirect(searchInfo.replace("[+\\s]".toRegex(), "_")) ?: searchInfo.replace("[+\\s]".toRegex(), "_"))
     else {
         val search = searchInfo.split("\\s+".toRegex())
         val allArticles = wiki.search(searchInfo)
@@ -73,7 +109,7 @@ fun searchResults(searchInfo: String): Pair<Boolean, List<String>> {
 fun embedFromWiki(titlePrefix: String, name: String, entry: Pair<List<String>, String>): EmbedBuilder {
     val (notices, body) = entry
 
-    val title = titlePrefix + name.replace("+", " ")
+    val title = titlePrefix + name.replace("+", " ").replace("#", ": ")
 
     val embed = EmbedBuilder()
             .setColor(coppermindColor)
@@ -100,7 +136,7 @@ fun embedFromWiki(titlePrefix: String, name: String, entry: Pair<List<String>, S
 }
 
 fun backupEmbed(title: String, name: String): EmbedBuilder {
-    return EmbedBuilder().setColor(coppermindColor).setTitle(title + name.replace("+", " "))
+    return EmbedBuilder().setColor(coppermindColor).setTitle(title + name.replace("+", " ").replace("#", ": "))
             .setUrl("https://coppermind.net/wiki/" + name.replace("[+\\s]".toRegex(), "_"))
             .setThumbnail(coppermindIcon).setDescription("An error occurred in loading the wiki preview.")
 }
