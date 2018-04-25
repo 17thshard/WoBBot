@@ -17,6 +17,8 @@ var fetches = 0
 
 var verbose = true
 
+var dates = true
+
 fun main(args: Array<String>) {
     val fromCache = System.getenv("LINTER_CACHE")?.toLowerCase()?.toBoolean() ?: run {
         logForce("Do you want to load Arcanum from the last cached data? (y/n)")
@@ -25,6 +27,11 @@ fun main(args: Array<String>) {
 
     verbose = System.getenv("LINTER_VERBOSE")?.toLowerCase()?.toBoolean() ?: run {
         logForce("Do you want the log to be verbose? (y/n)")
+        Scanner(System.`in`).next("[ynYN]").toLowerCase() == "y"
+    }
+
+    dates = verbose && System.getenv("LINTER_DATES")?.toLowerCase()?.toBoolean() ?: run {
+        logForce("Do you want the log to use verbose dates? (y/n)")
         Scanner(System.`in`).next("[ynYN]").toLowerCase() == "y"
     }
 
@@ -75,9 +82,9 @@ fun main(args: Array<String>) {
     results.printMatching("Blank speaker and/or line") {
         it.lines.any { it.getTrueText().isBlank() || it.getTrueSpeaker().isBlank() }
     }
-    results.printMatching("Non-ascii") {
-        it.lines.any { it.text.any { it.toInt() > 128 } || it.speaker.any { it.toInt() > 128 } }
-    }
+//    results.printMatching("Non-ascii") {
+//        it.lines.any { it.text.any { it.toInt() > 128 } || it.speaker.any { it.toInt() > 128 } }
+//    }
     results.printMatching("<br>") {
         it.lines.any { "<br>" in it.text }
     }
@@ -91,7 +98,7 @@ fun main(args: Array<String>) {
     logForce("========= Finished!")
 }
 
-fun logForce(data: Any?) = println((if (verbose) "[${Instant.now()}] " else "") + "$data")
+fun logForce(data: Any?) = println((if (dates) "[${Instant.now()}] " else "") + "$data")
 
 fun log(data: Any?) {
     if (verbose)
@@ -119,8 +126,10 @@ fun log(data: Any?) {
         logForce("======= All entries which aren't in compliance with: $name")
         for (entry in results)
             if (matcher(entry))
-                if (verbose)
+                if (verbose && dates)
                     log("    $entry")
+                else if (verbose)
+                    log(entry)
                 else
                     logForce(entry.id)
         logForce("======= Finished scan for $name")
