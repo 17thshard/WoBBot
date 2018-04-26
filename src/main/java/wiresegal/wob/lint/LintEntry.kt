@@ -123,15 +123,22 @@ fun log(data: Any?) {
     }
 
     fun printMatching(name: String, matcher: (Entry) -> Boolean) {
-        logForce("======= All entries which aren't in compliance with: $name")
+        var any = false
         for (entry in results)
-            if (matcher(entry))
+            if (matcher(entry)) {
+                if (!any) {
+                    logForce("===== Entries breaking rule $name")
+                    any = true
+                }
+
                 if (verbose && dates)
                     log("    $entry")
                 else if (verbose)
                     log(entry)
                 else
                     logForce(entry.id)
-        logForce("======= Finished scan for $name")
+            }
+        if (any)
+            logForce("===== Collected $name")
     }
 }
