@@ -1,7 +1,7 @@
 package wiresegal.wob
 
 import wiresegal.wob.plugin.RegisterHandlers
-import wiresegal.wob.plugin.addHiddenCalloutHandler
+import wiresegal.wob.plugin.addCalloutHandler
 import wiresegal.wob.plugin.gemColorFor
 import wiresegal.wob.plugin.sendRandomEmbed
 import java.awt.Color
@@ -96,15 +96,15 @@ val diagram = arrayOf(
 
 @RegisterHandlers
 fun registerCalloutDataHandlers() {
-    addHiddenCalloutHandler("checkthegemstonearchives") { _, _, _, message ->
+    addCalloutHandler("checkthegemstonearchives") { _, _, _, message ->
         message.channel.sendRandomEmbed(message.author, "Gemstone Archives", archive)
     }
 
-    addHiddenCalloutHandler("askthesilentgatherers") { _, _, _, message ->
+    addCalloutHandler("askthesilentgatherers") { _, _, _, message ->
         message.channel.sendRandomEmbed(message.author, "Death Rattles", Color.RED, rattles)
     }
 
-    addHiddenCalloutHandler("consultthediagram") { _, _, _, message ->
+    addCalloutHandler("consultthediagram") { _, _, _, message ->
         message.channel.sendRandomEmbed(message.author, "The Diagram", Color.BLUE, diagram)
     }
 }
