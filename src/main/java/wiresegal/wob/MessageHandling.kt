@@ -1,53 +1,64 @@
 package wiresegal.wob
 
-import de.btobastian.javacord.entities.DiscordEntity
-import de.btobastian.javacord.entities.channels.TextChannel
 import de.btobastian.javacord.entities.message.Message
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder
 import de.btobastian.javacord.events.message.MessageCreateEvent
+import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner
 import org.jsoup.Jsoup
-import java.awt.Color
+import wiresegal.wob.arcanum.*
+import wiresegal.wob.coppermind.searchCoppermind
+import wiresegal.wob.misc.setupDeletable
+import wiresegal.wob.misc.util.BotRanks
+import wiresegal.wob.misc.util.async
+import wiresegal.wob.misc.util.checkPermissions
+import wiresegal.wob.plugin.*
+import java.lang.reflect.Modifier
 import java.util.*
+import kotlin.reflect.jvm.internal.components.ReflectKotlinClass
+import kotlin.reflect.jvm.internal.impl.load.kotlin.header.KotlinClassHeader
 
 /**
  * @author WireSegal
  * Created at 11:43 PM on 2/15/18.
  */
-fun Array<Pair<String, String>>.embeds(title: String, color: Color): List<EmbedBuilder> {
-    return this.mapIndexed { idx, (rattle, comment) -> EmbedBuilder().apply {
-        setTitle("(${idx + 1}/$size) \n$title")
-        setColor(color)
-        setDescription(rattle)
-        setFooter(comment)
-    } }
+
+fun isKotlinObjectOrFile(clazz: Class<*>): Boolean {
+    val type = ReflectKotlinClass.create(clazz)?.classHeader?.kind
+    if (type == KotlinClassHeader.Kind.FILE_FACADE || type == KotlinClassHeader.Kind.MULTIFILE_CLASS || type == KotlinClassHeader.Kind.MULTIFILE_CLASS_PART)
+        return true
+
+    return clazz.kotlin.objectInstance != null
 }
 
-fun Array<Pair<String, Pair<String, Color>>>.embeds(title: String): List<EmbedBuilder> {
-    return this.mapIndexed { idx, (rattle, pair) -> EmbedBuilder().apply {
-        val (comment, color) = pair
-        setTitle("(${idx + 1}/$size) \n$title")
-        setColor(color)
-        setDescription(rattle)
-        setFooter(comment)
-    } }
+fun getKotlinObjectOrNull(clazz: Class<*>): Any? {
+    val type = ReflectKotlinClass.create(clazz)?.classHeader?.kind
+    if (type == KotlinClassHeader.Kind.FILE_FACADE || type == KotlinClassHeader.Kind.MULTIFILE_CLASS || type == KotlinClassHeader.Kind.MULTIFILE_CLASS_PART)
+        return null
+
+    return clazz.kotlin.objectInstance
 }
 
-fun TextChannel.sendRandomEmbed(requester: DiscordEntity, title: String, color: Color, messages: Array<Pair<String, String>>) {
-    val embeds = messages.embeds(title, color)
+fun registerAll() {
+    val classes = FastClasspathScanner()
+            .matchClassesWithMethodAnnotation(RegisterHandlers::class.java) { clazz, executable ->
+                (Modifier.isStatic(executable.modifiers) || isKotlinObjectOrFile(clazz)) &&
+                        executable.parameterCount == 0
+            }
+            .initializeLoadedClasses(true)
+            .scan()
 
-    val index = (Math.random() * embeds.size).toInt()
-    val embed = embeds[index]
+    for (clazz in classes.classNamesToClassRefs(classes
+            .getNamesOfClassesWithMethodAnnotation(RegisterHandlers::class.java))) {
+        val obj = getKotlinObjectOrNull(clazz)
+        val methods = clazz.methods.filter {
+            it.getAnnotation(RegisterHandlers::class.java) != null &&
+                    (Modifier.isStatic(it.modifiers) || obj != null)
+        }
+        for (method in methods)
+            method.invoke(obj)
+    }
 
-    sendMessage(embed).get().setupDeletable(requester).setupControls(requester, index, embeds)
-}
 
-fun TextChannel.sendRandomEmbed(requester: DiscordEntity, title: String, messages: Array<Pair<String, Pair<String, Color>>>) {
-    val embeds = messages.embeds(title)
-
-    val index = (Math.random() * embeds.size).toInt()
-    val embed = embeds[index]
-
-    sendMessage(embed).get().setupDeletable(requester).setupControls(requester, index, embeds)
 }
 
 fun actOnCreation(it: MessageCreateEvent) {
@@ -61,11 +72,26 @@ fun handleContent(message: Message, line: String) {
     val content = line.toLowerCase(Locale.ROOT).trim()
     val trimmed = content.replace("\\s".toRegex(), "")
     val noChrTrimmed = trimmed.replace("\\W".toRegex(), "")
-    if (content == "!wob" || content.startsWith("!wob ") || message.mentionedUsers.any { it.isYourself }) {
-        if (trimmed == "!wobhelp" || trimmed == api.yourself.mentionTag + " help" || trimmed == "!wob") { // Asking for help
-            message.channel.sendMessage("Use `!wob \"term\"` to search, or put a WoB link in to get its text directly.")
-        } else if (trimmed == api.yourself.mentionTag) // About
+
+    if (message.mentionedUsers.any { it.isYourself } && !content.startsWith("!")) {
+        if (trimmed == api.yourself.mentionTag) // About
             about(message)
+        else
+            handleContent(message, "!wob $line")
+    }
+
+    for (handler in textHandlers)
+        if (handler.matches(content, trimmed, noChrTrimmed, message)) {
+            handler.handle(content, trimmed, noChrTrimmed, message)
+            break
+        }
+}
+
+@RegisterHandlers
+fun registerBuiltinHandlers() {
+    addCommand("wob") { content, trimmed, _, message ->
+        if (trimmed == "!wob")
+            message.channel.sendMessage("Use `!wob \"term\"` to search, or put a WoB link in to get its text directly.")
         else {
             val allWobs = "#e(\\d+)".toRegex().findAll(content)
 
@@ -84,7 +110,9 @@ fun handleContent(message: Message, line: String) {
                 searchWoB(message, terms)
             }
         }
-    } else if (trimmed.startsWith("!cm") || trimmed.startsWith("!coppermind")) {
+    }
+
+    addCommand("coppermind", listOf("cm")) { content, trimmed, _, message ->
         if (trimmed == "!cm" || trimmed == "!coppermind")
             message.channel.sendMessage("Use `$trimmed \"term\"` to search.")
         else {
@@ -98,12 +126,9 @@ fun handleContent(message: Message, line: String) {
                 searchCoppermind(message, terms)
             }
         }
+    }
 
-    } else if (trimmed == "!wobabout")
-        about(message)
-    else if (trimmed == "!wobrandom") async {
-        message.channel.sendMessage(embedFromContent("", randomEntry())).get().setupDeletable(message.author)
-    } else if (message.server.isPresent && trimmed.startsWith("!wobrank") && message.checkPermissions(BotRanks.ADMIN)) {
+    addAdminCommand("wobrank", listOf("wobrankadd", "wobrankremove")) { content, trimmed, _, message ->
         val server = message.server.get()
         val add = trimmed.startsWith("!wobrankadd")
         val remove = trimmed.startsWith("!wobrankremove")
@@ -158,25 +183,38 @@ fun handleContent(message: Message, line: String) {
                         "* !wobrank remove <Role Name>" + roles)
             })
         }
-    } else if (noChrTrimmed.startsWith("saythewords"))
+    }
+
+    addCommand("wobhelp") { _, _, _, message ->
+        message.channel.sendMessage("Use `!wob \"term\"` to search, or put a WoB link in to get its text directly.")
+    }
+
+    addCommand("wobabout") { _, _, _, message ->
+        about(message)
+    }
+
+    addCommand("wobrandom") { _, _, _, message ->
+        message.channel.sendMessage(embedFromContent("", randomEntry())).get().setupDeletable(message.author)
+    }
+
+    addHiddenCalloutHandler("saythewords") { _, _, _, message ->
         message.channel.sendMessage("**`Life before death.`**\n" +
                 "**`Strength before weakness.`**\n" +
                 "**`Journey before destination.`**")
-    else if ("lifebeforedeath" in noChrTrimmed &&
-            "strengthbeforeweakness" in noChrTrimmed &&
-            "journeybeforedestination" in noChrTrimmed)
+    }
+
+    addMultiCalloutHandler(listOf("lifebeforedeath", "strengthbeforeweakness", "journeybeforedestination")) { _, _, _, message ->
         message.channel.sendMessage("**`These Words are Accepted.`**")
-    else if (noChrTrimmed.startsWith("askthesilentgatherers"))
-        message.channel.sendRandomEmbed(message.author, "Death Rattles", Color.RED, rattles)
-    else if (noChrTrimmed.startsWith("consultthediagram"))
-        message.channel.sendRandomEmbed(message.author, "The Diagram", Color.BLUE, diagram)
-    else if (noChrTrimmed.startsWith("checkthegemstonearchives"))
-        message.channel.sendRandomEmbed(message.author, "Gemstone Archives", archive)
-    else if (content == "express my opinion, wobbot" && message.content == line) {
-        if (message.checkPermissions(BotRanks.MANAGE_MESSAGES)) {
+    }
+
+    addExactCalloutHandler("express my opinion, wobbot") { content, _, _, message ->
+        if (message.content.toLowerCase(Locale.ROOT).trim() == content && message.checkPermissions(BotRanks.MANAGE_MESSAGES)) {
             message.delete()
             message.channel.sendMessage("ಠ_ಠ")
         }
-    } else if (content == "thank you, wobbot")
+    }
+
+    addExactCalloutHandler("thank you, wobbot") { _, _, _, message ->
         message.channel.sendMessage(Jsoup.connect("https://cdn.discordapp.com/emojis/396521772691881987.png?v=1").ignoreContentType(true).execute().bodyStream(), "blush.png")
+    }
 }

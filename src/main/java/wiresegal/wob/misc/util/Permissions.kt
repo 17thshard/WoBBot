@@ -1,4 +1,4 @@
-package wiresegal.wob
+package wiresegal.wob.misc.util
 
 import de.btobastian.javacord.entities.User
 import de.btobastian.javacord.entities.channels.TextChannel
@@ -7,6 +7,7 @@ import de.btobastian.javacord.entities.message.MessageAuthor
 import de.btobastian.javacord.entities.permissions.PermissionState
 import de.btobastian.javacord.entities.permissions.PermissionType
 import de.btobastian.javacord.entities.permissions.PermissionsBuilder
+import wiresegal.wob.permissions
 
 /**
  * @author WireSegal

@@ -4,8 +4,13 @@ import de.btobastian.javacord.DiscordApi
 import de.btobastian.javacord.DiscordApiBuilder
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder
 import de.btobastian.javacord.utils.logging.LoggerUtil
+import wiresegal.wob.arcanum.notifyOwners
+import wiresegal.wob.misc.actOnReaction
+import wiresegal.wob.misc.finalizeMessage
+import wiresegal.wob.misc.util.SavedTypedMap
+import wiresegal.wob.misc.util.async
+import wiresegal.wob.misc.util.fileInHome
 import java.awt.Color
-import java.util.*
 
 /**
  * @author WireSegal
@@ -30,53 +35,32 @@ val messagesWithEmbedLists = SavedTypedMap<Long, EmbeddedInfo>(fileInHome("wob_b
         val channel = values[1].toLongOrNull()
         if (uid != null && channel != null) async {
             api.servers.forEach {
-                it.textChannels.filter { it.id == channel }.forEach { it.getMessageById(key).whenComplete { message, _ ->
-                    message.finalizeMessage(uid)
-                } }
+                it.textChannels.filter { it.id == channel }.forEach {
+                    it.getMessageById(key).whenComplete { message, _ ->
+                        message.finalizeMessage(uid)
+                    }
+                }
             }
         }
     }
-    null }, false)
-val messageToAuthor = SavedTypedMap(fileInHome("wob_bot_deletable"), { it.toString() }, { it.toLongOrNull() ?: 0L },
+    null
+}, false)
+val messageToAuthor = SavedTypedMap(fileInHome("wob_bot_deletable"), { it.toString() }, {
+    it.toLongOrNull() ?: 0L
+},
         { _, value -> value.toString() }, { _, value -> value.toLongOrNull() ?: 0L })
-val permissions = SavedTypedMap(fileInHome("wob_bot_permissions"), { it.toString() }, { it.toLongOrNull() ?: 0L },
+val permissions = SavedTypedMap(fileInHome("wob_bot_permissions"), { it.toString() }, {
+    it.toLongOrNull() ?: 0L
+},
         { _, value -> value.joinToString(",") }, { _, value -> value.split(",").mapNotNull { it.toLongOrNull() } })
 
-
-val gitProperties: Properties by lazy {
-    val properties = Properties()
-
-    try {
-        val propertyStream = EmbeddedInfo::class.java.getResourceAsStream("/git.properties")
-        properties.load(propertyStream)
-    } catch (e: Exception) {
-        // NO-OP
-    }
-
-    properties
-}
-
-val version: String? by lazy {
-    val property = gitProperties.getProperty("git.commit.time")
-    if (property == null || property.contains("$")) null else property
-}
-val commitId: String? by lazy {
-    val property = gitProperties.getProperty("git.commit.id.abbrev")
-    if (property == null || property.contains("$")) null else property
-}
-val commitDesc: String? by lazy {
-    val property = gitProperties.getProperty("git.commit.message.short")
-    if (property == null || property.contains("$")) null else property
-}
-val committer: String? by lazy {
-    val property = gitProperties.getProperty("git.commit.user.name")
-    if (property == null || property.contains("$")) null else property
-}
 
 fun main(args: Array<String>) {
     LoggerUtil.getLogger("WoB").debug("Running version built at $version")
 
     notifyOwners()
+
+    registerAll()
 
     api.addMessageCreateListener(::actOnCreation)
     api.addReactionAddListener(::actOnReaction)

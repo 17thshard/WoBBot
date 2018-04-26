@@ -1,10 +1,12 @@
-package wiresegal.wob
+package wiresegal.wob.arcanum
 
 import com.google.gson.*
 import com.overzealous.remark.Options
 import com.overzealous.remark.Remark
 import org.jsoup.Connection
 import org.jsoup.Jsoup
+import wiresegal.wob.arcanumToken
+import wiresegal.wob.urlTarget
 import java.lang.reflect.Type
 import java.net.URLEncoder
 

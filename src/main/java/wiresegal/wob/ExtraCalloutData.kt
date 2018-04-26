@@ -1,6 +1,6 @@
 package wiresegal.wob
 
-import java.awt.Color
+import wiresegal.wob.plugin.gemColorFor
 
 /**
  * @author WireSegal
@@ -44,25 +44,6 @@ val rattles = arrayOf(
         "The day was ours, but they took it. Stormfather! You cannot have it. The day is ours. They come, rasping, and the lights fail. Oh, Stormfather!" to "Collected circa Tanat 1173 by Taravangian. Subject was a young boy.",
         "So the night will reign, for the choice of honor is life..." to "Observed circa Ishi 1173 by Taravangian. Subject was King Valam of Jah Keved.")
 
-val gemColors = mapOf(
-        "sapphire" to Color(0x0000FF),
-        "smokestone" to Color(0x303030),
-        "ruby" to Color(0xFF0000),
-        "diamond" to Color(0xBBBBBB),
-        "emerald" to Color(0x00FF00),
-        "garnet" to Color(0x7B0C0B),
-        "zircon" to Color(0x21B4E1),
-        "amethyst" to Color(0xAA20FF),
-        "topaz" to Color(0xCE7427),
-        "heliodor" to Color(0xCEBF2E)
-)
-
-private fun gemColorFor(last: String): Color {
-    for ((gem, color) in gemColors)
-        if (gem in last)
-            return color
-    return Color.WHITE
-}
 
 val archive = arrayOf(
         "As a Stoneward, I spent my entire life looking to sacrifice myself. I secretly worry that is the cowardly way. The easy way out." to "From drawer 29-5, topaz",

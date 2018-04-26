@@ -1,10 +1,15 @@
-package wiresegal.wob
+package wiresegal.wob.arcanum
 
 import de.btobastian.javacord.entities.message.Message
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder
 import de.btobastian.javacord.entities.permissions.PermissionState
 import de.btobastian.javacord.entities.permissions.PermissionType
 import de.btobastian.javacord.entities.permissions.PermissionsBuilder
+import wiresegal.wob.*
+import wiresegal.wob.misc.setupControls
+import wiresegal.wob.misc.setupDeletable
+import wiresegal.wob.misc.util.FakeEmbedBuilder
+import wiresegal.wob.plugin.visibleCommands
 
 /**
  * @author WireSegal
@@ -130,13 +135,7 @@ fun about(message: Message) {
         setColor(arcanumColor)
 
         setDescription("**Commands:** \n" +
-                " * !wob\n" +
-                " * !wobrandom\n" +
-                (if (message.checkPermissions(BotRanks.ADMIN)) " * !wobrank (Admin only)\n\n" else "\n") +
-                " * !coppermind\n" +
-                " * Ask the Silent Gatherers\n" +
-                " * Consult the Diagram\n" +
-                " * Check the Gemstone Archives\n\n" +
+                (visibleCommands.filter { it.matches(message) }.joinToString("\n") { " * " + it.name }) + "\n" +
                 "Author: $wireStr$add\n" +
                 "[Invite Link]($invite) | " +
                 "[Github Source](https://github.com/Palanaeum/WoBBot) | " +

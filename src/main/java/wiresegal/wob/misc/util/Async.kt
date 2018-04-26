@@ -1,4 +1,4 @@
-package wiresegal.wob
+package wiresegal.wob.misc.util
 
 import java.nio.channels.ClosedChannelException
 
@@ -27,7 +27,7 @@ fun setTimeout(millis: Long, code: () -> Unit): Long {
         }
     }
 
-    timeouts.put(thread.id, thread)
+    timeouts[thread.id] = thread
     thread.start()
     return thread.id
 }
@@ -50,7 +50,7 @@ fun setInterval(millis: Long, code: () -> Unit): Long {
             }
         }
     }
-    intervals.put(thread.id, thread)
+    intervals[thread.id] = thread
     thread.start()
     return thread.id
 }

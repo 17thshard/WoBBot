@@ -1,4 +1,4 @@
-package wiresegal.wob
+package wiresegal.wob.coppermind
 
 import com.overzealous.remark.Options
 import com.overzealous.remark.Remark
@@ -10,6 +10,8 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.nodes.Node
 import org.wikipedia.Wiki
+import wiresegal.wob.misc.setupControls
+import wiresegal.wob.misc.setupDeletable
 import java.awt.Color
 
 /**

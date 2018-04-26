@@ -1,4 +1,4 @@
-package wiresegal.wob
+package wiresegal.wob.misc.util
 
 import com.fasterxml.jackson.databind.node.ObjectNode
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder

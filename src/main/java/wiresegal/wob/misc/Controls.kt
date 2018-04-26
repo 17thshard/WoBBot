@@ -1,9 +1,14 @@
-package wiresegal.wob
+package wiresegal.wob.misc
 
 import de.btobastian.javacord.entities.DiscordEntity
 import de.btobastian.javacord.entities.message.Message
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder
 import de.btobastian.javacord.events.message.reaction.ReactionAddEvent
+import wiresegal.wob.EmbeddedInfo
+import wiresegal.wob.messageToAuthor
+import wiresegal.wob.messagesWithEmbedLists
+import wiresegal.wob.misc.util.BotRanks
+import wiresegal.wob.misc.util.checkPermissions
 
 /**
  * @author WireSegal
