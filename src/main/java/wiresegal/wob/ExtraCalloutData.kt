@@ -7,8 +7,30 @@ import wiresegal.wob.plugin.sendRandomEmbed
 import java.awt.Color
 
 /**
- * @author WireSegal
- * Created at 7:26 PM on 2/3/18.
+ * Data below is licensed under CC BY-NC-ND.
+ * https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode
+ *
+ * The license is summarized below.
+ *
+ *** You are free to:
+ * Share — copy and redistribute the material in any medium or format
+ ** The licensor cannot revoke these freedoms as long as you follow the license terms.
+ *** This license is subject to the following terms:
+ * Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made.
+ *               You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you
+ *               or your use.
+ * NonCommercial — You may not use the material for commercial purposes.
+ * ShareAlike — If you remix, transform, or build upon the material, you must distribute your contributions under
+ *              the same license as the original.
+ * NoDerivatives — If you remix, transform, or build upon the material, you may not distribute the modified material.
+ * No additional restrictions — You may not apply legal terms or technological measures that legally restrict
+ *                              others from doing anything the license permits.
+ *** Notices
+ * Exceptions - You do not have to comply with the license for elements of the material in the public domain or
+ *              where your use is permitted by an applicable exception or limitation.
+ * Warranty - No warranties are given. The license may not give you all of the permissions necessary for your
+ *            intended use. For example, other rights such as publicity, privacy, or moral rights may limit how
+ *            you use the material.
  */
 
 val rattles = arrayOf(
