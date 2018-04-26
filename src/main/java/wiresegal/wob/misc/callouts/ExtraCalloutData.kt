@@ -1,4 +1,4 @@
-package wiresegal.wob
+package wiresegal.wob.misc.callouts
 
 import wiresegal.wob.plugin.RegisterHandlers
 import wiresegal.wob.plugin.addCalloutHandler
