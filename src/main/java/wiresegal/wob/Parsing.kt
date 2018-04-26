@@ -139,7 +139,7 @@ fun about(message: Message) {
                 " * Check the Gemstone Archives\n\n" +
                 "Author: $wireStr$add\n" +
                 "[Invite Link]($invite) | " +
-                "[Github Source](https://github.com/yrsegal/WoBBot) | " +
+                "[Github Source](https://github.com/Palanaeum/WoBBot) | " +
                 "[Arcanum]($urlTarget)")
     })
 }
