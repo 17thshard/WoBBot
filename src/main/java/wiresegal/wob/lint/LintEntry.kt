@@ -103,9 +103,9 @@ fun logForce(data: Any?) = println((if (dates) "[${Instant.now()}] " else "") + 
 fun log(data: Any?) {
     if (verbose)
         logForce(data)
+}
 
-
-}class ArcanumDataSet(data: JsonObject) {
+class ArcanumDataSet(data: JsonObject) {
     val results: List<Entry>
 
     init {
