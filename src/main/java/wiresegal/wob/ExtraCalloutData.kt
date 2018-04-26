@@ -1,6 +1,10 @@
 package wiresegal.wob
 
+import wiresegal.wob.plugin.RegisterHandlers
+import wiresegal.wob.plugin.addHiddenCalloutHandler
 import wiresegal.wob.plugin.gemColorFor
+import wiresegal.wob.plugin.sendRandomEmbed
+import java.awt.Color
 
 /**
  * @author WireSegal
@@ -89,3 +93,19 @@ val diagram = arrayOf(
         "Chaos in Alethkar is, of course, inevitable. Watch carefully, and do not let power in the kingdom solidify. The Blackthorn could become an ally or our greatest foe, depending on whether he takes the path of the warlord or not. If he seems likely to sue for peace, assassinate him expeditiously. The risk of competition is too great." to "From the Diagram, Writings upon the Bedstand Lamp: Paragraph 4 (Adrotagia's 3rd translation from the original hieroglyphics)",
         "1173090605 1173090801 1173090901 1173091001 1173091004\n1173100105 1173100205 1173100401 1173100603 1173100804" to "North Wall Coda, Windowsill region: Paragraph 2 (This appears to be a sequence of dates, but their relevance is as yet unknown.)",
         "There​has​to​be​an​answer​What​is​the​answer​Stop​The​Parshendi​One​of​them​Yes​they​are​the​missing​piece​Push​for​the​Alethi​to​destroy​them​outright​before​this​one​obtains​their​power​It​will​form​abridge" to "From the Diagram, Floorboard 17: Paragraph 2, every second letter starting with the second")
+
+@RegisterHandlers
+fun registerCalloutDataHandlers() {
+    addHiddenCalloutHandler("checkthegemstonearchives") { _, _, _, message ->
+        message.channel.sendRandomEmbed(message.author, "Gemstone Archives", archive)
+    }
+
+    addHiddenCalloutHandler("askthesilentgatherers") { _, _, _, message ->
+        message.channel.sendRandomEmbed(message.author, "Death Rattles", Color.RED, rattles)
+    }
+
+    addHiddenCalloutHandler("consultthediagram") { _, _, _, message ->
+        message.channel.sendRandomEmbed(message.author, "The Diagram", Color.BLUE, diagram)
+    }
+}
+
