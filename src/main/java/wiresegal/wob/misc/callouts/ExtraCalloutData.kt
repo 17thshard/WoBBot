@@ -118,15 +118,15 @@ val diagram = arrayOf(
 
 @RegisterHandlers
 fun registerCalloutDataHandlers() {
-    addCalloutHandler("checkthegemstonearchives") { _, _, _, message ->
+    addCalloutHandler("Check the Gemstone Archive") { _, _, _, message ->
         message.channel.sendRandomEmbed(message.author, "Gemstone Archives", archive)
     }
 
-    addCalloutHandler("askthesilentgatherers") { _, _, _, message ->
+    addCalloutHandler("Ask the Silent Gatherers") { _, _, _, message ->
         message.channel.sendRandomEmbed(message.author, "Death Rattles", Color.RED, rattles)
     }
 
-    addCalloutHandler("consultthediagram") { _, _, _, message ->
+    addCalloutHandler("Consult the Diagram") { _, _, _, message ->
         message.channel.sendRandomEmbed(message.author, "The Diagram", Color.BLUE, diagram)
     }
 }

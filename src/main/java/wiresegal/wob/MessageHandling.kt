@@ -90,7 +90,7 @@ fun handleContent(message: Message, line: String) {
 @RegisterHandlers
 fun registerBuiltinHandlers() {
     addCommand("wob") { content, trimmed, _, message ->
-        if (trimmed == "!wob")
+        if (trimmed == "!wob" || trimmed.startsWith("!wob?"))
             message.channel.sendMessage("Use `!wob \"term\"` to search, or put a WoB link in to get its text directly.")
         else {
             val allWobs = "#e(\\d+)".toRegex().findAll(content)

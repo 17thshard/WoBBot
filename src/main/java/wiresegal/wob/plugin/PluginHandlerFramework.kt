@@ -57,15 +57,19 @@ fun addCommand(keyword: String, alias: List<String>, handle: InputFunction) {
 }
 
 fun addCalloutHandler(callout: String, handle: InputFunction) {
-    textHandlers.add(TextHandler({ _, _, it, _ -> it.startsWith(callout) }, handle))
+    visibleCommands.add(DocumentedCommand({ true }, callout))
+    val call = callout.replace("\\W".toRegex(), "").toLowerCase()
+    textHandlers.add(TextHandler({ _, _, it, _ -> it.startsWith(call) }, handle))
 }
 
 fun addHiddenCalloutHandler(callout: String, handle: InputFunction) {
-    textHandlers.add(TextHandler({ _, _, it, _ -> it.startsWith(callout) }, handle))
+    val call = callout.replace("\\W".toRegex(), "").toLowerCase()
+    textHandlers.add(TextHandler({ _, _, it, _ -> it.startsWith(call) }, handle))
 }
 
 fun addMultiCalloutHandler(callouts: List<String>, handle: InputFunction) {
-    textHandlers.add(TextHandler({ _, _, str, _ -> callouts.all { it in str } }, handle))
+    val calls = callouts.map { it.replace("\\W".toRegex(), "").toLowerCase() }
+    textHandlers.add(TextHandler({ _, _, str, _ -> calls.all { it in str } }, handle))
 }
 
 fun addExactCalloutHandler(callout: String, handle: InputFunction) {
