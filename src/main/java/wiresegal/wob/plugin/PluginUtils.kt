@@ -1,11 +1,17 @@
 package wiresegal.wob.plugin
 
 import de.btobastian.javacord.entities.DiscordEntity
+import de.btobastian.javacord.entities.Mentionable
+import de.btobastian.javacord.entities.channels.GroupChannel
+import de.btobastian.javacord.entities.channels.PrivateChannel
 import de.btobastian.javacord.entities.channels.TextChannel
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder
+import wiresegal.wob.arcanum.notifyOwners
 import wiresegal.wob.misc.setupControls
 import wiresegal.wob.misc.setupDeletable
 import java.awt.Color
+import java.io.PrintWriter
+import java.io.StringWriter
 
 /**
  * @author WireSegal
@@ -67,4 +73,31 @@ fun TextChannel.sendRandomEmbed(requester: DiscordEntity, title: String, message
     val embed = embeds[index]
 
     sendMessage(embed).get().setupDeletable(requester).setupControls(requester, index, embeds)
+}
+
+fun TextChannel.sendError(message: String, error: Exception) {
+    val trace = StringWriter().apply { PrintWriter(this).apply { error.printStackTrace(this) } }.toString()
+            .split("\n").take(5).joinToString("\n")
+    sendMessage(EmbedBuilder().apply {
+        setTitle("ERROR")
+        setColor(Color.RED)
+        setFooter(message)
+        setDescription("`$trace`")
+    })
+    error.printStackTrace()
+
+    val location = when {
+        this is Mentionable -> "in " + this.mentionTag + "\n"
+        this is PrivateChannel -> "in " + this.recipient.mentionTag + "\n"
+        this is GroupChannel -> "in " + (this.name.orElse(null)?.plus("\n") ?: "") +
+                this.members.joinToString { it.mentionTag } + "\n"
+        else -> ""
+    }
+
+    notifyOwners {
+        setTitle("ERROR")
+        setColor(Color.RED)
+        setFooter(message)
+        setDescription("$location`$trace`")
+    }
 }

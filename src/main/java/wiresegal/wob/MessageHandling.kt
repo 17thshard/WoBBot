@@ -128,7 +128,7 @@ fun registerBuiltinHandlers() {
         }
     }
 
-    addAdminCommand("wobrank", listOf("wobrankadd", "wobrankremove")) { content, trimmed, _, message ->
+    addAdminCommand("wobrank", listOf("wobrankadd", "wobrankremove")) { _, trimmed, _, message ->
         val server = message.server.get()
         val add = trimmed.startsWith("!wobrankadd")
         val remove = trimmed.startsWith("!wobrankremove")

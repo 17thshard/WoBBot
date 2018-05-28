@@ -9,6 +9,7 @@ import wiresegal.wob.*
 import wiresegal.wob.misc.setupControls
 import wiresegal.wob.misc.setupDeletable
 import wiresegal.wob.misc.util.FakeEmbedBuilder
+import wiresegal.wob.plugin.sendError
 import wiresegal.wob.plugin.visibleCommands
 
 /**
@@ -115,8 +116,7 @@ fun searchWoB(message: Message, terms: List<String>) {
         waiting.delete()
     } catch (e: Exception) {
         type.close()
-        message.channel.sendMessage("An error occurred trying to look up the WoB.")
-        e.printStackTrace()
+        message.channel.sendError("An error occurred trying to look up the WoB.", e)
     }
 }
 
@@ -143,23 +143,25 @@ fun about(message: Message) {
     })
 }
 
-fun notifyOwners() {
-    val embed = EmbedBuilder().apply {
-        setColor(arcanumColor)
-        setTitle("Launch Notification")
-        addField("Last Commit", "$commitDesc ($commitId)", false)
-        addField("Committer", committer, false)
-        addField("Commit Time", version, false)
-        setTimestamp()
-    }
+fun notifyOwners() = notifyOwners {
+    setColor(arcanumColor)
+    setTitle("Launch Notification")
+    addField("Last Commit", "$commitDesc ($commitId)", false)
+    addField("Committer", committer, false)
+    addField("Commit Time", version, false)
+    setTimestamp()
+}
 
+fun notifyOwners(embed: EmbedBuilder.() -> Unit) {
     val wireID = 77084495118868480L
     val wire = api.getUserById(wireID)
 
+    val e = EmbedBuilder().apply(embed)
+
     if (wire.isPresent)
-        wire.get().sendMessage(embed)
+        wire.get().sendMessage(e)
     if (api.owner.isPresent && api.ownerId != wireID)
-        api.owner.get().sendMessage(embed)
+        api.owner.get().sendMessage(e)
 }
 
 

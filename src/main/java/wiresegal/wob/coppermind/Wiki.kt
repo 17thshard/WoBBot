@@ -12,6 +12,7 @@ import org.jsoup.nodes.Node
 import org.wikipedia.Wiki
 import wiresegal.wob.misc.setupControls
 import wiresegal.wob.misc.setupDeletable
+import wiresegal.wob.plugin.sendError
 import java.awt.Color
 
 /**
@@ -55,8 +56,12 @@ class Coppermind : Wiki("coppermind.net") {
             while (j > 0) {
                 val parsedtitle = parseAttribute(line, "from", j)
                 for (i in titles.indices)
-                    if (normalize(titles[i]) == parsedtitle)
-                        ret[i] = parseAttribute(line, "to", j) + "#" + parseAttribute(line, "tofragment", j)
+                    if (normalize(titles[i]) == parsedtitle) {
+                        ret[i] = parseAttribute(line, "to", j)
+                        val frag = parseAttribute(line, "tofragment", j)
+                        if (frag != null)
+                            ret[i] += "#$frag"
+                    }
                 j = line.indexOf("<r ", ++j)
             }
         }
@@ -186,7 +191,6 @@ fun searchCoppermind(message: Message, terms: List<String>) {
         waiting.delete()
     } catch (e: Exception) {
         type.close()
-        message.channel.sendMessage("An error occurred trying to look up the article.")
-        e.printStackTrace()
+        message.channel.sendError("An error occurred trying to look up the article.", e)
     }
 }
