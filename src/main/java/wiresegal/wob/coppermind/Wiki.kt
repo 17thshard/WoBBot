@@ -137,7 +137,7 @@ fun embedFromWiki(titlePrefix: String, name: String, entry: Pair<List<String>, S
     var desc = description.joinToString("\n\n")
     if (desc.length > 1600)
         desc = desc.substring(0, "\\.[\"”'’]?\\s".toRegex().findAll(desc)
-                .last { it.range.start <= 1600 }.range.endInclusive)
+                .lastOrNull { it.range.start <= 1600 }?.range?.endInclusive ?: 1600)
 
     embed.setDescription(desc)
 

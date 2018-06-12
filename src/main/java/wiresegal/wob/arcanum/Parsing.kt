@@ -95,29 +95,31 @@ fun harvestFromSearch(terms: List<String>): List<EmbedBuilder> {
 }
 
 fun searchWoB(message: Message, terms: List<String>) {
-    val waiting = message.channel.sendMessage("Searching for \"${terms.joinToString().replace("&!", "!")}\"...").get()
-    val type = message.channel.typeContinuously()
-    try {
-        val allEmbeds = harvestFromSearch(terms)
+    message.channel.sendMessage("Searching for \"${terms.joinToString().replace("&!", "!")}\"...")
+            .thenApply {
+                val type = message.channel.typeContinuously()
+                try {
+                    val allEmbeds = harvestFromSearch(terms)
 
-        type.close()
+                    type.close()
 
-        when {
-            allEmbeds.isEmpty() -> message.channel.sendMessage("Couldn't find any WoBs for \"${terms.joinToString().replace("&!", "!")}\".")
-            allEmbeds.size == 1 -> {
-                val finalEmbed = allEmbeds.first()
-                finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
-                message.channel.sendMessage(finalEmbed).get().setupDeletable(message.author)
+                    when {
+                        allEmbeds.isEmpty() -> message.channel.sendMessage("Couldn't find any WoBs for \"${terms.joinToString().replace("&!", "!")}\".")
+                        allEmbeds.size == 1 -> {
+                            val finalEmbed = allEmbeds.first()
+                            finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
+                            message.channel.sendMessage(finalEmbed).get().setupDeletable(message.author)
+                        }
+                        else ->
+                            message.channel.sendMessage(allEmbeds.first()).handle { u, _ -> type.close(); u }.get()
+                                    .setupDeletable(message.author).setupControls(message.author, 0, allEmbeds)
+                    }
+                    it.delete()
+                } catch (e: Exception) {
+                    type.close()
+                    message.channel.sendError("An error occurred trying to look up the WoB.", e)
+                }
             }
-            else ->
-                message.channel.sendMessage(allEmbeds.first()).get()
-                        .setupDeletable(message.author).setupControls(message.author, 0, allEmbeds)
-        }
-        waiting.delete()
-    } catch (e: Exception) {
-        type.close()
-        message.channel.sendError("An error occurred trying to look up the WoB.", e)
-    }
 }
 
 fun about(message: Message) {

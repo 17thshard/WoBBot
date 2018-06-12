@@ -70,8 +70,8 @@ fun Message.finalizeMessage(uid: Long) {
 }
 
 fun actOnReaction(it: ReactionAddEvent) {
-    if (it.message.isPresent && it.reaction.isPresent) {
-        val message = it.message.get()
+    val message = it.requestMessage().get()
+    if (it.reaction.isPresent) {
         val reaction = it.reaction.get()
         if (message.author.isYourself && reaction.emoji.isUnicodeEmoji) {
             val unicode = reaction.emoji.asUnicodeEmoji().get()
