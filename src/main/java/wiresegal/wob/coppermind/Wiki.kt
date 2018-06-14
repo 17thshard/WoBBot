@@ -3,6 +3,7 @@ package wiresegal.wob.coppermind
 import com.overzealous.remark.Options
 import com.overzealous.remark.Remark
 import com.overzealous.remark.convert.InlineStyle
+import de.btobastian.javacord.entities.channels.PrivateChannel
 import de.btobastian.javacord.entities.message.Message
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder
 import org.jsoup.Jsoup
@@ -170,9 +171,10 @@ fun harvestFromWiki(terms: List<String>): List<EmbedBuilder> {
 }
 
 fun searchCoppermind(message: Message, terms: List<String>) {
-    val waiting = message.channel.sendMessage("Searching for \"${terms.joinToString(" ")}\"...").get()
-    val type = message.channel.typeContinuously()
+    var type = AutoCloseable {}
     try {
+        val it = message.channel.sendMessage("Searching for \"${terms.joinToString(" ")}\"...").get()
+        type = message.channel.typeContinuously()
         val allEmbeds = harvestFromWiki(terms)
 
         type.close()
@@ -188,9 +190,12 @@ fun searchCoppermind(message: Message, terms: List<String>) {
                 message.channel.sendMessage(allEmbeds.first()).get()
                         .setupDeletable(message.author).setupControls(message.author, 0, allEmbeds)
         }
-        waiting.delete()
+        if (it.channel !is PrivateChannel)
+            it.delete()
     } catch (e: Exception) {
         type.close()
         message.channel.sendError("An error occurred trying to look up the article.", e)
     }
+
+
 }

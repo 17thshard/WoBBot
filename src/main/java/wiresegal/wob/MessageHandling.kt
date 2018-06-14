@@ -1,5 +1,6 @@
 package wiresegal.wob
 
+import de.btobastian.javacord.entities.channels.PrivateChannel
 import de.btobastian.javacord.entities.message.Message
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder
 import de.btobastian.javacord.events.message.MessageCreateEvent
@@ -80,11 +81,13 @@ fun handleContent(message: Message, line: String) {
             handleContent(message, "!wob $line")
     }
 
-    for (handler in textHandlers)
-        if (handler.matches(content, trimmed, noChrTrimmed, message)) {
-            handler.handle(content, trimmed, noChrTrimmed, message)
-            break
-        }
+    async {
+        for (handler in textHandlers)
+            if (handler.matches(content, trimmed, noChrTrimmed, message)) {
+                handler.handle(content, trimmed, noChrTrimmed, message)
+                break
+            }
+    }
 }
 
 @RegisterHandlers
@@ -209,7 +212,8 @@ fun registerBuiltinHandlers() {
 
     addExactCalloutHandler("express my opinion, wobbot") { content, _, _, message ->
         if (message.content.toLowerCase(Locale.ROOT).trim() == content && message.checkPermissions(BotRanks.MANAGE_MESSAGES)) {
-            message.delete()
+            if (message.channel !is PrivateChannel)
+                message.delete()
             message.channel.sendMessage("ಠ_ಠ")
         }
     }

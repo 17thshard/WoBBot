@@ -43,6 +43,7 @@ fun nakedApiRequest(url: String): String {
             .header("Accept", "application/json; charset=utf-8")
             .apply { if (arcanumToken != null) header("Authorization", "Token $arcanumToken") }
             .method(Connection.Method.GET)
+            .timeout(60000)
             .execute().body()
 }
 

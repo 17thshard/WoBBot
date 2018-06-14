@@ -94,10 +94,14 @@ fun TextChannel.sendError(message: String, error: Exception) {
         else -> ""
     }
 
-    notifyOwners {
-        setTitle("ERROR")
-        setColor(Color.RED)
-        setFooter(message)
-        setDescription("$location`$trace`")
-    }
+    val wireID = 77084495118868480L
+    val ownerID = api.ownerId
+
+    if (this !is PrivateChannel || (this.recipient.id != wireID || this.recipient.id != ownerID))
+        notifyOwners {
+            setTitle("ERROR")
+            setColor(Color.RED)
+            setFooter(message)
+            setDescription("$location`$trace`")
+        }
 }

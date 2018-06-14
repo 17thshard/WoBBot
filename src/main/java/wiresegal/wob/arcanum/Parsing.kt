@@ -1,5 +1,6 @@
 package wiresegal.wob.arcanum
 
+import de.btobastian.javacord.entities.channels.PrivateChannel
 import de.btobastian.javacord.entities.message.Message
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder
 import de.btobastian.javacord.entities.permissions.PermissionState
@@ -95,31 +96,31 @@ fun harvestFromSearch(terms: List<String>): List<EmbedBuilder> {
 }
 
 fun searchWoB(message: Message, terms: List<String>) {
-    message.channel.sendMessage("Searching for \"${terms.joinToString().replace("&!", "!")}\"...")
-            .thenApply {
-                val type = message.channel.typeContinuously()
-                try {
-                    val allEmbeds = harvestFromSearch(terms)
+    var type = AutoCloseable {}
+    try {
+        val it = message.channel.sendMessage("Searching for \"${terms.joinToString(" ")}\"...").get()
+        type = message.channel.typeContinuously()
+        val allEmbeds = harvestFromSearch(terms)
 
-                    type.close()
+        type.close()
 
-                    when {
-                        allEmbeds.isEmpty() -> message.channel.sendMessage("Couldn't find any WoBs for \"${terms.joinToString().replace("&!", "!")}\".")
-                        allEmbeds.size == 1 -> {
-                            val finalEmbed = allEmbeds.first()
-                            finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
-                            message.channel.sendMessage(finalEmbed).get().setupDeletable(message.author)
-                        }
-                        else ->
-                            message.channel.sendMessage(allEmbeds.first()).handle { u, _ -> type.close(); u }.get()
-                                    .setupDeletable(message.author).setupControls(message.author, 0, allEmbeds)
-                    }
-                    it.delete()
-                } catch (e: Exception) {
-                    type.close()
-                    message.channel.sendError("An error occurred trying to look up the WoB.", e)
-                }
+        when {
+            allEmbeds.isEmpty() -> message.channel.sendMessage("Couldn't find any WoBs for \"${terms.joinToString().replace("&!", "!")}\".")
+            allEmbeds.size == 1 -> {
+                val finalEmbed = allEmbeds.first()
+                finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
+                message.channel.sendMessage(finalEmbed).get().setupDeletable(message.author)
             }
+            else ->
+                message.channel.sendMessage(allEmbeds.first()).handle { u, _ -> type.close(); u }.get()
+                        .setupDeletable(message.author).setupControls(message.author, 0, allEmbeds)
+        }
+        if (it.channel !is PrivateChannel)
+            it.delete()
+    } catch (e: Exception) {
+        type.close()
+        message.channel.sendError("An error occurred trying to look up the WoB.", e)
+    }
 }
 
 fun about(message: Message) {
@@ -149,8 +150,8 @@ fun notifyOwners() = notifyOwners {
     setColor(arcanumColor)
     setTitle("Launch Notification")
     addField("Last Commit", "$commitDesc ($commitId)", false)
-    addField("Committer", committer, false)
-    addField("Commit Time", version, false)
+    addField("Committer", committer.toString(), false)
+    addField("Commit Time", version.toString(), false)
     setTimestamp()
 }
 
