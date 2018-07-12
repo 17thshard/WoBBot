@@ -194,7 +194,7 @@ fun searchCoppermind(message: Message, terms: List<String>) {
             it.delete()
     } catch (e: Exception) {
         type.close()
-        message.channel.sendError("An error occurred trying to look up the article.", e)
+        message.sendError("An error occurred trying to look up the article.", e)
     }
 
 

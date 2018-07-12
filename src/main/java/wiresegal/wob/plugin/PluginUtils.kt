@@ -5,8 +5,10 @@ import de.btobastian.javacord.entities.Mentionable
 import de.btobastian.javacord.entities.channels.GroupChannel
 import de.btobastian.javacord.entities.channels.PrivateChannel
 import de.btobastian.javacord.entities.channels.TextChannel
+import de.btobastian.javacord.entities.message.Message
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder
 import wiresegal.wob.arcanum.notifyOwners
+import wiresegal.wob.arcanum.sendTo
 import wiresegal.wob.misc.setupControls
 import wiresegal.wob.misc.setupDeletable
 import java.awt.Color
@@ -75,15 +77,21 @@ fun TextChannel.sendRandomEmbed(requester: DiscordEntity, title: String, message
     sendMessage(embed).get().setupDeletable(requester).setupControls(requester, index, embeds)
 }
 
-fun TextChannel.sendError(message: String, error: Exception) {
-    val trace = StringWriter().apply { PrintWriter(this).apply { error.printStackTrace(this) } }.toString()
-            .split("\n").take(5).joinToString("\n")
+fun Message.sendError(message: String, error: Exception) {
+    channel.sendError(this, message, error)
+}
+
+fun TextChannel.sendError(replyingTo: Message, message: String, error: Exception) {
+    val fullTrace = StringWriter().apply { PrintWriter(this).apply { error.printStackTrace(this) } }.toString()
+    val trace = fullTrace.split("\n").take(5).joinToString("\n")
+
     sendMessage(EmbedBuilder().apply {
         setTitle("ERROR")
         setColor(Color.RED)
         setFooter(message)
         setDescription("`$trace`")
     })
+
     error.printStackTrace()
 
     val location = when {
@@ -94,14 +102,22 @@ fun TextChannel.sendError(message: String, error: Exception) {
         else -> ""
     }
 
+
     val wireID = 77084495118868480L
     val ownerID = api.ownerId
 
-    if (this !is PrivateChannel || (this.recipient.id != wireID || this.recipient.id != ownerID))
+    if (this !is PrivateChannel || (this.recipient.id != wireID || this.recipient.id != ownerID)) {
         notifyOwners {
             setTitle("ERROR")
             setColor(Color.RED)
             setFooter(message)
             setDescription("$location`$trace`")
         }
+
+        notifyOwners(replyingTo.content, "message")
+        notifyOwners(fullTrace, "error")
+    } else if (this.recipient.id == wireID || this.recipient.id == ownerID) {
+        this.recipient.sendTo(replyingTo.content, "message")
+        this.recipient.sendTo(fullTrace, "error")
+    }
 }

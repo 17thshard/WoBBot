@@ -1,5 +1,6 @@
 package wiresegal.wob.arcanum
 
+import de.btobastian.javacord.entities.User
 import de.btobastian.javacord.entities.channels.PrivateChannel
 import de.btobastian.javacord.entities.message.Message
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder
@@ -119,7 +120,7 @@ fun searchWoB(message: Message, terms: List<String>) {
             it.delete()
     } catch (e: Exception) {
         type.close()
-        message.channel.sendError("An error occurred trying to look up the WoB.", e)
+        message.sendError("An error occurred trying to look up the WoB.", e)
     }
 }
 
@@ -146,6 +147,16 @@ fun about(message: Message) {
     })
 }
 
+fun applyToOwners(toApply: User.() -> Unit) {
+    val wireID = 77084495118868480L
+    val wire = api.getUserById(wireID)
+
+    if (wire.isPresent)
+        wire.get().toApply()
+    if (api.owner.isPresent && api.ownerId != wireID)
+        api.owner.get().toApply()
+}
+
 fun notifyOwners() = notifyOwners {
     setColor(arcanumColor)
     setTitle("Launch Notification")
@@ -155,16 +166,22 @@ fun notifyOwners() = notifyOwners {
     setTimestamp()
 }
 
-fun notifyOwners(embed: EmbedBuilder.() -> Unit) {
-    val wireID = 77084495118868480L
-    val wire = api.getUserById(wireID)
-
-    val e = EmbedBuilder().apply(embed)
-
-    if (wire.isPresent)
-        wire.get().sendMessage(e)
-    if (api.owner.isPresent && api.ownerId != wireID)
-        api.owner.get().sendMessage(e)
+fun notifyOwners(embed: EmbedBuilder.() -> Unit) = applyToOwners {
+    sendMessage(EmbedBuilder().apply(embed))
 }
 
+fun notifyOwners(data: String, name: String) = applyToOwners {
+    sendTo(data, name)
+}
 
+fun User.sendTo(data: String, name: String) {
+    val prefix = "$name: "
+    when {
+        data.length > 2000 - prefix.length ->
+            sendMessage(data.byteInputStream(), "$name.txt")
+        data.isEmpty() ->
+            sendMessage("Nothing found for $name!")
+        else ->
+            sendMessage(prefix + data)
+    }
+}
