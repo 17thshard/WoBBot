@@ -78,7 +78,7 @@ fun handleContent(message: Message, line: String) {
         if (trimmed == api.yourself.mentionTag) // About
             about(message)
         else
-            handleContent(message, "!wob $line")
+            handleContent(message, "!$wobCommand $line")
     }
 
     async {
@@ -92,9 +92,9 @@ fun handleContent(message: Message, line: String) {
 
 @RegisterHandlers
 fun registerBuiltinHandlers() {
-    addCommand("wob") { content, trimmed, _, message ->
-        if (trimmed == "!wob" || trimmed.startsWith("!wob?"))
-            message.channel.sendMessage("Use `!wob \"term\"` to search, or put a WoB link in to get its text directly.")
+    addCommand(wobCommand) { content, trimmed, _, message ->
+        if (trimmed == "!$wobCommand" || trimmed.startsWith("!$wobCommand?"))
+            message.channel.sendMessage("Use `!$wobCommand \"term\"` to search, or put a link in to get its text directly.")
         else {
             val allWobs = "#e(\\d+)".toRegex().findAll(content)
 
@@ -115,8 +115,9 @@ fun registerBuiltinHandlers() {
         }
     }
 
-    addCommand("coppermind", listOf("cm")) { content, trimmed, _, message ->
-        if (trimmed == "!cm" || trimmed == "!coppermind")
+    val wikiCommands = wikiCommand.split("|")
+    addCommand(wikiCommands[0], wikiCommands.drop(1)) { content, trimmed, _, message ->
+        if (wikiCommands.any { trimmed == "!$it" })
             message.channel.sendMessage("Use `$trimmed \"term\"` to search.")
         else {
             val terms = "[\"“]([/\\w\\s,]+)[\"”]".toRegex().findAll(content).toList()
@@ -131,16 +132,16 @@ fun registerBuiltinHandlers() {
         }
     }
 
-    addAdminCommand("wobrank", listOf("wobrankadd", "wobrankremove")) { _, trimmed, _, message ->
+    addAdminCommand("${wobCommand}rank", listOf("${wobCommand}rankadd", "${wobCommand}rankremove")) { _, trimmed, _, message ->
         val server = message.server.get()
-        val add = trimmed.startsWith("!wobrankadd")
-        val remove = trimmed.startsWith("!wobrankremove")
+        val add = trimmed.startsWith("!${wobCommand}rankadd")
+        val remove = trimmed.startsWith("!${wobCommand}rankremove")
 
         if (add || remove) {
             val roleName = if (add)
-                trimmed.removePrefix("!wobrankadd")
+                trimmed.removePrefix("!${wobCommand}rankadd")
             else
-                trimmed.removePrefix("!wobrankremove")
+                trimmed.removePrefix("!${wobCommand}rankremove")
             val role = server.roles.firstOrNull { it.name.toLowerCase().replace("\\s+".toRegex(), "") == roleName }
             if (role != null) {
                 val list = permissions.getOrElse(server.id) { listOf() }
@@ -167,7 +168,7 @@ fun registerBuiltinHandlers() {
             }
         } else {
             message.channel.sendMessage(EmbedBuilder().apply {
-                setTitle("WoB Rank Details _(Admin Only)_")
+                setTitle("Rank Details _(Admin Only)_")
                 setColor(arcanumColor)
 
                 var roles = ""
@@ -182,43 +183,45 @@ fun registerBuiltinHandlers() {
                 }
                 setDescription("Anyone with one of the whitelisted roles may use reactions as though they were the one who sent the message.\n\n" +
                         "Usage:\n" +
-                        "* !wobrank add <Role Name>\n" +
-                        "* !wobrank remove <Role Name>" + roles)
+                        "* !${wobCommand}rank add <Role Name>\n" +
+                        "* !${wobCommand}rank remove <Role Name>" + roles)
             })
         }
     }
 
-    addCommand("wobhelp") { _, _, _, message ->
-        message.channel.sendMessage("Use `!wob \"term\"` to search, or put a WoB link in to get its text directly.")
+    addCommand("${wobCommand}help") { _, _, _, message ->
+        message.channel.sendMessage("Use `!$wobCommand \"term\"` to search, or put a WoB link in to get its text directly.")
     }
 
-    addCommand("wobabout") { _, _, _, message ->
+    addCommand("${wobCommand}about") { _, _, _, message ->
         about(message)
     }
 
-    addCommand("wobrandom") { _, _, _, message ->
+    addCommand("${wobCommand}random") { _, _, _, message ->
         message.channel.sendMessage(embedFromContent("", randomEntry())).get().setupDeletable(message.author)
     }
 
-    addHiddenCalloutHandler("saythewords") { _, _, _, message ->
-        message.channel.sendMessage("**`Life before death.`**\n" +
-                "**`Strength before weakness.`**\n" +
-                "**`Journey before destination.`**")
-    }
-
-    addMultiCalloutHandler(listOf("lifebeforedeath", "strengthbeforeweakness", "journeybeforedestination")) { _, _, _, message ->
-        message.channel.sendMessage("**`These Words are Accepted.`**")
-    }
-
-    addExactCalloutHandler("express my opinion, wobbot") { content, _, _, message ->
-        if (message.content.toLowerCase(Locale.ROOT).trim() == content && message.checkPermissions(BotRanks.MANAGE_MESSAGES)) {
-            if (message.channel !is PrivateChannel)
-                message.delete()
-            message.channel.sendMessage("ಠ_ಠ")
+    if (wobCommand == "wob") {
+        addHiddenCalloutHandler("saythewords") { _, _, _, message ->
+            message.channel.sendMessage("**`Life before death.`**\n" +
+                    "**`Strength before weakness.`**\n" +
+                    "**`Journey before destination.`**")
         }
-    }
 
-    addExactCalloutHandler("thank you, wobbot") { _, _, _, message ->
-        message.channel.sendMessage(Jsoup.connect("https://cdn.discordapp.com/emojis/396521772691881987.png?v=1").ignoreContentType(true).execute().bodyStream(), "blush.png")
+        addMultiCalloutHandler(listOf("lifebeforedeath", "strengthbeforeweakness", "journeybeforedestination")) { _, _, _, message ->
+            message.channel.sendMessage("**`These Words are Accepted.`**")
+        }
+
+        addExactCalloutHandler("express my opinion, wobbot") { content, _, _, message ->
+            if (message.content.toLowerCase(Locale.ROOT).trim() == content && message.checkPermissions(BotRanks.MANAGE_MESSAGES)) {
+                if (message.channel !is PrivateChannel)
+                    message.delete()
+                message.channel.sendMessage("ಠ_ಠ")
+            }
+        }
+
+        addExactCalloutHandler("thank you, wobbot") { _, _, _, message ->
+            message.channel.sendMessage(Jsoup.connect("https://cdn.discordapp.com/emojis/396521772691881987.png?v=1").ignoreContentType(true).execute().bodyStream(), "blush.png")
+        }
     }
 }

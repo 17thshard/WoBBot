@@ -55,7 +55,7 @@ fun embedFromContent(titlePrefix: String, entry: Entry): EmbedBuilder {
         embed.addField(speaker, comment, false)
         val newJson = embed.toJsonNode()
         val footer = newJson.objectNode()
-        footer.put("text", "(Too long to display. Check Arcanum for more.)")
+        footer.put("text", "(Too long to display. Check the original for more.)")
         val oldFooter = newJson.get("footer")?.toString() ?: ""
         val size = footer.toString().length - oldFooter.length
         if (newJson.toString().length > 2000 - size) {
@@ -74,7 +74,7 @@ fun backupEmbed(title: String, entry: Entry): EmbedBuilder {
     val backup = EmbedBuilder().setColor(arcanumColor).setTitle(title)
             .setUrl(entry.toString())
             .setThumbnail(iconUrl)
-    backup.setDescription("This WoB is too long. Click on the link above to see it on Arcanum.")
+    backup.setDescription("This entry is too long. Click on the link above to see the original.")
     return backup
 }
 
@@ -106,7 +106,7 @@ fun searchWoB(message: Message, terms: List<String>) {
         type.close()
 
         when {
-            allEmbeds.isEmpty() -> message.channel.sendMessage("Couldn't find any WoBs for \"${terms.joinToString().replace("&!", "!")}\".")
+            allEmbeds.isEmpty() -> message.channel.sendMessage("Couldn't find any entries for \"${terms.joinToString().replace("&!", "!")}\".")
             allEmbeds.size == 1 -> {
                 val finalEmbed = allEmbeds.first()
                 finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
@@ -120,7 +120,7 @@ fun searchWoB(message: Message, terms: List<String>) {
             it.delete()
     } catch (e: Exception) {
         type.close()
-        message.sendError("An error occurred trying to look up the WoB.", e)
+        message.sendError("An error occurred trying to look up the entry.", e)
     }
 }
 
@@ -151,9 +151,9 @@ fun applyToOwners(toApply: User.() -> Unit) {
     val wireID = 77084495118868480L
     val wire = api.getUserById(wireID)
 
-    if (wire.isPresent)
+    if (wobCommand == "wob" && wire.isPresent)
         wire.get().toApply()
-    if (api.owner.isPresent && api.ownerId != wireID)
+    if (api.owner.isPresent && (api.ownerId != wireID || wobCommand != "wob"))
         api.owner.get().toApply()
 }
 

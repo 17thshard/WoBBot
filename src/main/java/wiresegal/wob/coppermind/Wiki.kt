@@ -14,6 +14,7 @@ import org.wikipedia.Wiki
 import wiresegal.wob.misc.setupControls
 import wiresegal.wob.misc.setupDeletable
 import wiresegal.wob.plugin.sendError
+import wiresegal.wob.wikiTarget
 import java.awt.Color
 
 /**
@@ -32,14 +33,14 @@ const val coppermindIcon = "https://cdn.discordapp.com/emojis/432391749550342145
 fun Remark.convert(node: List<Node>, base: String): String = convertFragment(node.joinToString(""), base)
 fun Remark.convert(node: Node, base: String): String = convertFragment(node.toString(), base)
 
-class Coppermind : Wiki("coppermind.net") {
+class Coppermind : Wiki(wikiTarget) {
 
     fun getSectionHTML(title: String): String {
         return parse(getPageText(title)).replace("API", title.replace("[+_]".toRegex(), " "))
     }
 
     fun getDocument(title: String): Document {
-        return Jsoup.parse(getSectionHTML(title), "https://coppermind.net")
+        return Jsoup.parse(getSectionHTML(title), "https://$wikiTarget")
     }
 
     fun resolveFragmentRedirect(title: String) = resolveFragmentRedirect(arrayOf(title))[0]
@@ -92,8 +93,8 @@ fun fetchPreview(searchInfo: String): Pair<List<String>, String> {
         next = next.nextElementSibling()
     }
 
-    val notices = allNotices.filter { it.childNodeSize() > 0 }.map { wikiMarkup.convert(it.child(0), "https://coppermind.net") }
-    var splits = wikiMarkup.convert(sectionNodes, "https://coppermind.net").split("(?<!\\*\\*”\\*\\*)\n{2,}".toRegex())
+    val notices = allNotices.filter { it.childNodeSize() > 0 }.map { wikiMarkup.convert(it.child(0), "https://$wikiTarget") }
+    var splits = wikiMarkup.convert(sectionNodes, "https://$wikiTarget").split("(?<!\\*\\*”\\*\\*)\n{2,}".toRegex())
 
     if (splits.none { "http://en.wikipedia.org/wiki/Help:Disambiguation" in it })
         splits = splits.take(2)
@@ -127,7 +128,7 @@ fun embedFromWiki(titlePrefix: String, name: String, entry: Pair<List<String>, S
     val embed = EmbedBuilder()
             .setColor(coppermindColor)
             .setTitle(title)
-            .setUrl("https://coppermind.net/wiki/" + name.replace("[+\\s]".toRegex(), "_"))
+            .setUrl("https://$wikiTarget/wiki/" + name.replace("[+\\s]".toRegex(), "_"))
             .setThumbnail(coppermindIcon)
 
     val description = mutableListOf<String>()
@@ -150,7 +151,7 @@ fun embedFromWiki(titlePrefix: String, name: String, entry: Pair<List<String>, S
 
 fun backupEmbed(title: String, name: String): EmbedBuilder {
     return EmbedBuilder().setColor(coppermindColor).setTitle(title + name.replace("+", " ").replace("#", ": "))
-            .setUrl("https://coppermind.net/wiki/" + name.replace("[+\\s]".toRegex(), "_"))
+            .setUrl("https://$wikiTarget/wiki/" + name.replace("[+\\s]".toRegex(), "_"))
             .setThumbnail(coppermindIcon).setDescription("An error occurred in loading the wiki preview.")
 }
 

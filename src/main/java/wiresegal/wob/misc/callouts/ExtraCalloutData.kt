@@ -2,8 +2,8 @@ package wiresegal.wob.misc.callouts
 
 import wiresegal.wob.plugin.RegisterHandlers
 import wiresegal.wob.plugin.addCalloutHandler
-import wiresegal.wob.plugin.gemColorFor
 import wiresegal.wob.plugin.sendRandomEmbed
+import wiresegal.wob.wobCommand
 import java.awt.Color
 
 /**
@@ -32,6 +32,27 @@ import java.awt.Color
  *            intended use. For example, other rights such as publicity, privacy, or moral rights may limit how
  *            you use the material.
  */
+
+
+val gemColors = mapOf(
+        "sapphire" to Color(0x0000FF),
+        "smokestone" to Color(0x303030),
+        "ruby" to Color(0xFF0000),
+        "diamond" to Color(0xBBBBBB),
+        "emerald" to Color(0x00FF00),
+        "garnet" to Color(0x7B0C0B),
+        "zircon" to Color(0x21B4E1),
+        "amethyst" to Color(0xAA20FF),
+        "topaz" to Color(0xCE7427),
+        "heliodor" to Color(0xCEBF2E)
+)
+
+fun gemColorFor(last: String): Color {
+    for ((gem, color) in gemColors)
+        if (gem in last)
+            return color
+    return Color.WHITE
+}
 
 val rattles = arrayOf(
         "You've killed me. Bastards, you've killed me! While the sun is still hot, I die!" to "Collected on Chachabah 1171, 10 seconds pre-death, by the Silent Gatherers. Subject was a darkeyed soldier thirty-one years of age. Sample is considered questionable.",
@@ -118,16 +139,18 @@ val diagram = arrayOf(
 
 @RegisterHandlers
 fun registerCalloutDataHandlers() {
-    addCalloutHandler("Check the Gemstone Archive") { _, _, _, message ->
-        message.channel.sendRandomEmbed(message.author, "Gemstone Archives", archive)
-    }
+    if (wobCommand == "wob") {
+        addCalloutHandler("Check the Gemstone Archive") { _, _, _, message ->
+            message.channel.sendRandomEmbed(message.author, "Gemstone Archives", archive)
+        }
 
-    addCalloutHandler("Ask the Silent Gatherers") { _, _, _, message ->
-        message.channel.sendRandomEmbed(message.author, "Death Rattles", Color.RED, rattles)
-    }
+        addCalloutHandler("Ask the Silent Gatherers") { _, _, _, message ->
+            message.channel.sendRandomEmbed(message.author, "Death Rattles", Color.RED, rattles)
+        }
 
-    addCalloutHandler("Consult the Diagram") { _, _, _, message ->
-        message.channel.sendRandomEmbed(message.author, "The Diagram", Color.BLUE, diagram)
+        addCalloutHandler("Consult the Diagram") { _, _, _, message ->
+            message.channel.sendRandomEmbed(message.author, "The Diagram", Color.BLUE, diagram)
+        }
     }
 }
 

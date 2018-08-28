@@ -11,6 +11,7 @@ import wiresegal.wob.arcanum.notifyOwners
 import wiresegal.wob.arcanum.sendTo
 import wiresegal.wob.misc.setupControls
 import wiresegal.wob.misc.setupDeletable
+import wiresegal.wob.wobCommand
 import java.awt.Color
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -19,26 +20,6 @@ import java.io.StringWriter
  * @author WireSegal
  * Created at 10:03 AM on 4/26/18.
  */
-
-val gemColors = mapOf(
-        "sapphire" to Color(0x0000FF),
-        "smokestone" to Color(0x303030),
-        "ruby" to Color(0xFF0000),
-        "diamond" to Color(0xBBBBBB),
-        "emerald" to Color(0x00FF00),
-        "garnet" to Color(0x7B0C0B),
-        "zircon" to Color(0x21B4E1),
-        "amethyst" to Color(0xAA20FF),
-        "topaz" to Color(0xCE7427),
-        "heliodor" to Color(0xCEBF2E)
-)
-
-fun gemColorFor(last: String): Color {
-    for ((gem, color) in gemColors)
-        if (gem in last)
-            return color
-    return Color.WHITE
-}
 
 fun Array<Pair<String, String>>.embeds(title: String, color: Color): List<EmbedBuilder> {
     return this.mapIndexed { idx, (rattle, comment) -> EmbedBuilder().apply {
@@ -106,7 +87,7 @@ fun TextChannel.sendError(replyingTo: Message, message: String, error: Exception
     val wireID = 77084495118868480L
     val ownerID = api.ownerId
 
-    if (this !is PrivateChannel || (this.recipient.id != wireID || this.recipient.id != ownerID)) {
+    if (this !is PrivateChannel || ((this.recipient.id != wireID && wobCommand == "wob") || this.recipient.id != ownerID)) {
         notifyOwners {
             setTitle("ERROR")
             setColor(Color.RED)
@@ -116,7 +97,7 @@ fun TextChannel.sendError(replyingTo: Message, message: String, error: Exception
 
         notifyOwners(replyingTo.content, "message")
         notifyOwners(fullTrace, "error")
-    } else if (this.recipient.id == wireID || this.recipient.id == ownerID) {
+    } else if ((this.recipient.id == wireID && wobCommand == "wob") || this.recipient.id == ownerID) {
         this.recipient.sendTo(replyingTo.content, "message")
         this.recipient.sendTo(fullTrace, "error")
     }

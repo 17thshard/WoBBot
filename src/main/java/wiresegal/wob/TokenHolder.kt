@@ -23,6 +23,9 @@ private val gitProperties: Properties by lazy {
 val token: String? = System.getenv("DISCORD_TOKEN")
 val arcanumToken: String? = System.getenv("ARCANUM_TOKEN")
 val urlTarget = System.getenv("ARCANUM_URL") ?: "https://wob.coppermind.net"
+val wikiTarget = System.getenv("WIKI_URL") ?: "coppermind.net"
+val wikiCommand = System.getenv("WIKI_COMMAND") ?: "coppermind|cm"
+val wobCommand = System.getenv("WOB_COMMAND") ?: "wob"
 
 val version: String? by lazy {
     val property = gitProperties.getProperty("git.commit.time")
