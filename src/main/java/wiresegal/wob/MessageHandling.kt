@@ -115,19 +115,21 @@ fun registerBuiltinHandlers() {
         }
     }
 
-    val wikiCommands = wikiCommand.split("|")
-    addCommand(wikiCommands[0], wikiCommands.drop(1)) { content, trimmed, _, message ->
-        if (wikiCommands.any { trimmed == "!$it" })
-            message.channel.sendMessage("Use `$trimmed \"term\"` to search.")
-        else {
-            val terms = "[\"“]([/\\w\\s,]+)[\"”]".toRegex().findAll(content).toList()
-                    .flatMap {
-                        it.groupValues[1].split("[\\s,]+".toRegex())
-                    }.filter { it.matches("[/\\w]+".toRegex()) }
-                    .map { it.toLowerCase().capitalize() }
+    if (wikiCommand.length > 1) {
+        val wikiCommands = wikiCommand.split("|")
+        addCommand(wikiCommands[0], wikiCommands.drop(1)) { content, trimmed, _, message ->
+            if (wikiCommands.any { trimmed == "!$it" })
+                message.channel.sendMessage("Use `$trimmed \"term\"` to search.")
+            else {
+                val terms = "[\"“]([/\\w\\s,]+)[\"”]".toRegex().findAll(content).toList()
+                        .flatMap {
+                            it.groupValues[1].split("[\\s,]+".toRegex())
+                        }.filter { it.matches("[/\\w]+".toRegex()) }
+                        .map { it.toLowerCase().capitalize() }
 
-            if (terms.any()) async {
-                searchCoppermind(message, terms)
+                if (terms.any()) async {
+                    searchCoppermind(message, terms)
+                }
             }
         }
     }
