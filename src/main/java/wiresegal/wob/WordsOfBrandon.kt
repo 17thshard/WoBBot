@@ -10,15 +10,11 @@ import wiresegal.wob.misc.finalizeMessage
 import wiresegal.wob.misc.util.SavedTypedMap
 import wiresegal.wob.misc.util.async
 import wiresegal.wob.misc.util.fileInHome
-import java.awt.Color
 
 /**
  * @author WireSegal
  * Created at 9:12 PM on 1/25/18.
  */
-
-val arcanumColor = Color(0x003A52)
-const val iconUrl = "https://cdn.discordapp.com/emojis/373082865073913859.png?v=1"
 
 private val apiProvider = DiscordApiBuilder().setToken(token).login()
 

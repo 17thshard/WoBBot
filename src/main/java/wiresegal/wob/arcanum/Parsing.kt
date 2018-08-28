@@ -27,7 +27,7 @@ fun embedFromContent(titlePrefix: String, entry: Entry): EmbedBuilder {
     val title = titlePrefix + entry.eventName + " " + dateStr
 
     val embed = EmbedBuilder()
-            .setColor(arcanumColor)
+            .setColor(embedColor)
             .setTitle(title)
             .setUrl(entry.toString())
             .setThumbnail(iconUrl)
@@ -71,7 +71,7 @@ fun embedFromContent(titlePrefix: String, entry: Entry): EmbedBuilder {
 }
 
 fun backupEmbed(title: String, entry: Entry): EmbedBuilder {
-    val backup = EmbedBuilder().setColor(arcanumColor).setTitle(title)
+    val backup = EmbedBuilder().setColor(embedColor).setTitle(title)
             .setUrl(entry.toString())
             .setThumbnail(iconUrl)
     backup.setDescription("This entry is too long. Click on the link above to see the original.")
@@ -136,7 +136,7 @@ fun about(message: Message) {
 
     message.channel.sendMessage(EmbedBuilder().apply {
         setTitle("About WoBBot")
-        setColor(arcanumColor)
+        setColor(embedColor)
 
         setDescription("**Commands:** \n" +
                 (visibleCommands.filter { it.matches(message) }.joinToString("\n") { " * " + it.name }) + "\n" +
@@ -158,7 +158,7 @@ fun applyToOwners(toApply: User.() -> Unit) {
 }
 
 fun notifyOwners() = notifyOwners {
-    setColor(arcanumColor)
+    setColor(embedColor)
     setTitle("Launch Notification")
     addField("Last Commit", "$commitDesc ($commitId)", false)
     addField("Committer", committer.toString(), false)

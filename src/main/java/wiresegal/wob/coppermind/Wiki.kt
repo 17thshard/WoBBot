@@ -14,8 +14,9 @@ import org.wikipedia.Wiki
 import wiresegal.wob.misc.setupControls
 import wiresegal.wob.misc.setupDeletable
 import wiresegal.wob.plugin.sendError
+import wiresegal.wob.wikiEmbedColor
+import wiresegal.wob.wikiIconUrl
 import wiresegal.wob.wikiTarget
-import java.awt.Color
 
 /**
  * @author WireSegal
@@ -26,9 +27,6 @@ val wiki = Coppermind()
 val wikiMarkup = Remark(Options.github().apply { inlineLinks = true; preserveRelativeLinks }).apply {
     converter.addInlineNode(InlineStyle(), "blockquote")
 }
-
-val coppermindColor = Color(0xCB6D51)
-const val coppermindIcon = "https://cdn.discordapp.com/emojis/432391749550342145.png?v=1"
 
 fun Remark.convert(node: List<Node>, base: String): String = convertFragment(node.joinToString(""), base)
 fun Remark.convert(node: Node, base: String): String = convertFragment(node.toString(), base)
@@ -126,10 +124,10 @@ fun embedFromWiki(titlePrefix: String, name: String, entry: Pair<List<String>, S
     val title = titlePrefix + name.replace("+", " ").replace("#", ": ")
 
     val embed = EmbedBuilder()
-            .setColor(coppermindColor)
+            .setColor(wikiEmbedColor)
             .setTitle(title)
             .setUrl("https://$wikiTarget/wiki/" + name.replace("[+\\s]".toRegex(), "_"))
-            .setThumbnail(coppermindIcon)
+            .setThumbnail(wikiIconUrl)
 
     val description = mutableListOf<String>()
 
@@ -150,9 +148,9 @@ fun embedFromWiki(titlePrefix: String, name: String, entry: Pair<List<String>, S
 }
 
 fun backupEmbed(title: String, name: String): EmbedBuilder {
-    return EmbedBuilder().setColor(coppermindColor).setTitle(title + name.replace("+", " ").replace("#", ": "))
+    return EmbedBuilder().setColor(wikiEmbedColor).setTitle(title + name.replace("+", " ").replace("#", ": "))
             .setUrl("https://$wikiTarget/wiki/" + name.replace("[+\\s]".toRegex(), "_"))
-            .setThumbnail(coppermindIcon).setDescription("An error occurred in loading the wiki preview.")
+            .setThumbnail(wikiIconUrl).setDescription("An error occurred in loading the wiki preview.")
 }
 
 fun harvestFromWiki(terms: List<String>): List<EmbedBuilder> {

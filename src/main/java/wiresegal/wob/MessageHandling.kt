@@ -171,7 +171,7 @@ fun registerBuiltinHandlers() {
         } else {
             message.channel.sendMessage(EmbedBuilder().apply {
                 setTitle("Rank Details _(Admin Only)_")
-                setColor(arcanumColor)
+                setColor(embedColor)
 
                 var roles = ""
 
