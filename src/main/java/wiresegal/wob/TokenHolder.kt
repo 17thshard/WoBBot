@@ -30,7 +30,7 @@ val wobCommand = System.getenv("WOB_COMMAND") ?: "wob"
 val iconUrl = System.getenv("ARCANUM_ICON") ?: "https://cdn.discordapp.com/emojis/373082865073913859.png?v=1"
 val wikiIconUrl = System.getenv("WIKI_ICON") ?: "https://cdn.discordapp.com/emojis/432391749550342145.png?v=1"
 val embedColor = Color((System.getenv("ARCANUM_COLOR") ?: "003A52").toInt(16))
-val wikiEmbedColor = Color((System.getenv("ARCANUM_COLOR") ?: "CB6D51").toInt(16))
+val wikiEmbedColor = Color((System.getenv("WIKI_COLOR") ?: "CB6D51").toInt(16))
 
 
 val version: String? by lazy {
