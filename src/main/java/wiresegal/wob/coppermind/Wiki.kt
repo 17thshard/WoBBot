@@ -67,6 +67,10 @@ class Coppermind : Wiki(wikiTarget) {
         }
         return ret
     }
+
+    override fun fetch(url: String, caller: String): String {
+        return super.fetch(url.replace("&intoken=[^&]+".toRegex(), ""), caller)
+    }
 }
 
 fun fetchPreview(searchInfo: String): Pair<List<String>, String> {
@@ -103,17 +107,23 @@ fun fetchPreview(searchInfo: String): Pair<List<String>, String> {
 }
 
 fun searchResults(searchInfo: String): Pair<Boolean, List<String>> {
-    return if (wiki.getPageInfo(searchInfo.replace("[+\\s]".toRegex(), "_"))["exists"] as Boolean)
-        false to listOf(wiki.resolveFragmentRedirect(searchInfo.replace("[+\\s]".toRegex(), "_")) ?: searchInfo.replace("[+\\s]".toRegex(), "_"))
+    val rawName = searchInfo.replace("[+\\s]".toRegex(), "_")
+    return if (wiki.getPageInfo(rawName)["exists"] as Boolean)
+        false to listOf(wiki.resolveFragmentRedirect(rawName) ?: rawName)
     else {
         val search = searchInfo.split("\\s+".toRegex())
         val allArticles = wiki.search(searchInfo)
                 .map { it.first() }
-        val articles = allArticles.take(10)
-        val redirected = wiki.resolveRedirects(articles.toTypedArray())
-        (articles.size != allArticles.size) to redirected.mapIndexed { idx, it -> it ?: articles[idx] }
-                .toSet()
-                .sortedBy { search.count { term -> term in it } }
+        val raw = allArticles.firstOrNull { it.toLowerCase() == rawName.toLowerCase() }
+        if (raw != null)
+            false to listOf(wiki.resolveFragmentRedirect(raw) ?: raw)
+        else {
+            val articles = allArticles.take(10)
+            val redirected = wiki.resolveRedirects(articles.toTypedArray())
+            (articles.size != allArticles.size) to redirected.mapIndexed { idx, it -> it ?: articles[idx] }
+                    .toSet()
+                    .sortedBy { search.count { term -> term in it } }
+        }
     }
 
 }
