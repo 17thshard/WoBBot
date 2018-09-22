@@ -75,10 +75,10 @@ fun TextChannel.sendError(replyingTo: Message, message: String, error: Exception
 
     error.printStackTrace()
 
-    val location = when {
-        this is Mentionable -> "in " + this.mentionTag + "\n"
-        this is PrivateChannel -> "in " + this.recipient.mentionTag + "\n"
-        this is GroupChannel -> "in " + (this.name.orElse(null)?.plus("\n") ?: "") +
+    val location = when(this) {
+        is Mentionable -> "in " + this.mentionTag + "\n"
+        is PrivateChannel -> "in " + this.recipient.mentionTag + "\n"
+        is GroupChannel -> "in " + (this.name.orElse(null)?.plus("\n") ?: "") +
                 this.members.joinToString { it.mentionTag } + "\n"
         else -> ""
     }
@@ -87,7 +87,7 @@ fun TextChannel.sendError(replyingTo: Message, message: String, error: Exception
     val wireID = 77084495118868480L
     val ownerID = api.ownerId
 
-    if (this !is PrivateChannel || ((this.recipient.id != wireID && wobCommand == "wob") || this.recipient.id != ownerID)) {
+    if (this !is PrivateChannel || !((this.recipient.id != wireID && wobCommand == "wob") || this.recipient.id != ownerID)) {
         notifyOwners {
             setTitle("ERROR")
             setColor(Color.RED)
