@@ -86,7 +86,7 @@ fun fetchPreview(searchInfo: String): Pair<List<String>, String> {
     allNotices.forEach(Element::remove)
 
     val sectionHeader = if ('#' in searchInfo)
-        x.getElementById(searchInfo.split("#")[1].replace("[+\\s]".toRegex(), "_")).parent()
+        x.getElementById(searchInfo.split("#")[1].replace("[+\\s]".toRegex(), "_"))?.parent() ?: body.child(0)
     else
         body.child(0)
 
