@@ -6,7 +6,10 @@ import de.btobastian.javacord.entities.message.embed.EmbedBuilder
 import de.btobastian.javacord.events.message.MessageCreateEvent
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner
 import wiresegal.wob.arcanum.*
+import wiresegal.wob.coppermind.embedFromWiki
+import wiresegal.wob.coppermind.fetchPreview
 import wiresegal.wob.coppermind.searchCoppermind
+import wiresegal.wob.coppermind.wiki
 import wiresegal.wob.misc.emotions.EMOTIONS
 import wiresegal.wob.misc.emotions.sendEmotion
 import wiresegal.wob.misc.setupDeletable
@@ -122,6 +125,17 @@ fun registerBuiltinHandlers() {
             if (wikiCommands.any { trimmed == "!$it" })
                 message.channel.sendMessage("Use `$trimmed \"term\"` to search.")
             else {
+                val allPages = "coppermind.net/wiki/([a-z0-9._/~%\\-+&#?!=()@])*".toRegex().findAll(content)
+
+                for (page in allPages) async {
+                    val rawName = page.groupValues[1]
+                    if (wiki.getPageInfo(rawName)["exists"] as Boolean) {
+                        val pageName = wiki.resolveFragmentRedirect(rawName) ?: rawName
+                        val preview = fetchPreview(pageName)
+                        message.channel.sendMessage(embedFromWiki("", pageName, preview)).get().setupDeletable(message.author)
+                    }
+                }
+
                 val terms = "[\"“]([/\\w\\s,]+)[\"”]".toRegex().findAll(content).toList()
                         .flatMap {
                             it.groupValues[1].split("[\\s,]+".toRegex())
