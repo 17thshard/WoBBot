@@ -75,13 +75,15 @@ class Coppermind : Wiki(wikiTarget) {
 
 fun fetchPreview(searchInfo: String): Pair<List<String>, String> {
     val x = wiki.getDocument(searchInfo)
-    val body = x.body()
-    val allNotices = body.children().takeWhile { it.hasClass("notice") }
-    allNotices.forEach(Element::remove)
     x.getElementsByClass("infobox").forEach(Element::remove)
+    x.getElementsByClass("toc").forEach(Element::remove)
     x.getElementsByClass("reference").forEach(Element::remove)
     x.getElementsByClass("mw-references-wrap").forEach(Element::remove)
     x.getElementsByClass("thumb").forEach(Element::remove)
+
+    val body = x.body()
+    val allNotices = body.children().takeWhile { it.hasClass("notice") }
+    allNotices.forEach(Element::remove)
 
     val sectionHeader = if ('#' in searchInfo)
         x.getElementById(searchInfo.split("#")[1].replace("[+\\s]".toRegex(), "_")).parent()
@@ -89,6 +91,9 @@ fun fetchPreview(searchInfo: String): Pair<List<String>, String> {
         body.child(0)
 
     val sectionNodes = mutableListOf<Element>()
+    if (!sectionHeader.tagName().startsWith("h"))
+        sectionNodes.add(sectionHeader)
+
     var next = sectionHeader.nextElementSibling()
     while (next != null && !next.tagName().startsWith("h")) {
         sectionNodes.add(next)
