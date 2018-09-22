@@ -5,9 +5,10 @@ import de.btobastian.javacord.entities.message.Message
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder
 import de.btobastian.javacord.events.message.MessageCreateEvent
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner
-import org.jsoup.Jsoup
 import wiresegal.wob.arcanum.*
 import wiresegal.wob.coppermind.searchCoppermind
+import wiresegal.wob.misc.emotions.EMOTIONS
+import wiresegal.wob.misc.emotions.sendEmotion
 import wiresegal.wob.misc.setupDeletable
 import wiresegal.wob.misc.util.BotRanks
 import wiresegal.wob.misc.util.async
@@ -223,7 +224,25 @@ fun registerBuiltinHandlers() {
         }
 
         addExactCalloutHandler("thank you, wobbot") { _, _, _, message ->
-            message.channel.sendMessage(Jsoup.connect("https://cdn.discordapp.com/emojis/396521772691881987.png?v=1").ignoreContentType(true).execute().bodyStream(), "blush.png")
+            message.channel.sendEmotion("blush")
+        }
+
+        addExactCalloutHandler("i love you, wobbot") { _, _, _, message ->
+            message.channel.sendEmotion("love")
+        }
+
+        for (emotion in EMOTIONS)
+            addExactCalloutHandler("express $emotion, wobbot") { content, _, _, message ->
+                if (message.content.toLowerCase(Locale.ROOT).trim() == content && message.checkPermissions(BotRanks.MANAGE_MESSAGES)) {
+                    if (message.channel !is PrivateChannel)
+                        message.delete()
+                    message.channel.sendEmotion(emotion)
+                }
+            }
+
+        addHiddenCalloutHandler("what can you express") { _, _, _, message ->
+            if (message.channel is PrivateChannel)
+                message.channel.sendMessage(EMOTIONS.joinToString("\n") { "`$it`" })
         }
     }
 }
