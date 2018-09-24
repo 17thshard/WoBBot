@@ -19,7 +19,7 @@ class FakeEmbedBuilder(val json: ObjectNode) : EmbedBuilder() {
     }
 }
 
-open class SavedMap(val location: File, private val backingMap: MutableMap<String, String> = mutableMapOf()) :
+open class SavedMap(val location: File, val loadLimit: Int = -1, private val backingMap: MutableMap<String, String> = mutableMapOf()) :
         MutableMap<String, String> by backingMap {
 
     private var lock = Any()
@@ -69,7 +69,11 @@ open class SavedMap(val location: File, private val backingMap: MutableMap<Strin
     protected open fun load(purge: Boolean) {
         location.createNewFile()
         val text = location.readText()
-        val entries = text.split("\n").map { it.split("::").map { it.replace("\\:", ":") } }.filter { it.size > 1 }
+        val entries = text.split("\n")
+                .map { it.split("::")
+                        .map { it.replace("\\:", ":") } }
+                .filter { it.size > 1 }
+                .apply { if (loadLimit > 0) take(loadLimit) }
         val map = entries.associate { it[0] to it[1] }.toMutableMap()
         fillDirect(map, purge)
     }
@@ -82,6 +86,7 @@ class SavedTypedMap<K : Any, V : Any>(location: File,
                                       private val serializeValue: (K, V) -> String,
                                       private val deserializeValue: (K, String) -> V?,
                                       private val persistentLoad: Boolean = true,
+                                      private val loadLimit: Int = -1,
                                       private val backingMap: MutableMap<K, V> = mutableMapOf()) : MutableMap<K, V> by backingMap {
 
     private val internalMap = SavedBackingMap(location)

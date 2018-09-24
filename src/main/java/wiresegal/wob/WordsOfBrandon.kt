@@ -22,25 +22,27 @@ val api: DiscordApi by lazy { apiProvider.join() }
 
 data class EmbeddedInfo(val user: Long, val channel: Long, val index: Int, val embeds: List<EmbedBuilder>)
 
-val messagesWithEmbedLists = SavedTypedMap<Long, EmbeddedInfo>(fileInHome("wob_bot_messages"),
-        { it.toString() }, { it.toLongOrNull() ?: 0L },
-        { _, value -> "${value.user}:${value.channel}" }, { key, value ->
-    val values = value.split(":")
-    if (values.size > 1) {
-        val uid = values[0].toLongOrNull()
-        val channel = values[1].toLongOrNull()
-        if (uid != null && channel != null) async {
-            api.servers.forEach {
-                it.textChannels.filter { it.id == channel }.forEach {
-                    it.getMessageById(key).whenComplete { message, _ ->
-                        message.finalizeMessage(uid)
+val messagesWithEmbedLists by lazy {
+    SavedTypedMap<Long, EmbeddedInfo>(fileInHome("wob_bot_messages"),
+            { it.toString() }, { it.toLongOrNull() ?: 0L },
+            { _, value -> "${value.user}:${value.channel}" }, { key, value ->
+        val values = value.split(":")
+        if (values.size > 1) {
+            val uid = values[0].toLongOrNull()
+            val channel = values[1].toLongOrNull()
+            if (uid != null && channel != null) async {
+                api.servers.forEach {
+                    it.textChannels.filter { it.id == channel }.forEach {
+                        it.getMessageById(key).whenComplete { message, _ ->
+                            message.finalizeMessage(uid)
+                        }
                     }
                 }
             }
         }
-    }
-    null
-}, false)
+        null
+    }, false, loadLimit = 50)
+}
 val messageToAuthor = SavedTypedMap(fileInHome("wob_bot_deletable"), { it.toString() }, {
     it.toLongOrNull() ?: 0L
 },
@@ -57,6 +59,8 @@ fun main(args: Array<String>) {
     notifyOwners()
 
     registerAll()
+
+    messagesWithEmbedLists.clear()
 
     api.addMessageCreateListener(::actOnCreation)
     api.addReactionAddListener(::actOnReaction)
