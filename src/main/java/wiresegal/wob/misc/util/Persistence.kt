@@ -121,7 +121,7 @@ class SavedTypedMap<K : Any, V : Any>(location: File,
         return ret
     }
 
-    private inner class SavedBackingMap(location: File) : SavedMap(location) {
+    private inner class SavedBackingMap(location: File) : SavedMap(location, loadLimit) {
         public override fun save() {
             fillDirect(backingMap.map { serializeKey(it.key) to serializeValue(it.key, it.value) }.toMap(), false)
             super.save()
