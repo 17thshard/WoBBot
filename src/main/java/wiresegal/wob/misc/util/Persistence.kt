@@ -57,7 +57,15 @@ open class SavedMap(val location: File, val loadLimit: Int = -1, private val bac
     protected fun fillDirect(from: Map<out String, String>, purge: Boolean) {
         if (purge)
             backingMap.clear()
-        backingMap.putAll(from)
+        if (loadLimit > 0) {
+            var counter = 0
+            for ((k, v) in from) {
+                backingMap[k] = v
+                if (counter++ >= loadLimit)
+                    break
+            }
+        } else
+            backingMap.putAll(from)
     }
 
     protected open fun save() {
@@ -131,14 +139,18 @@ class SavedTypedMap<K : Any, V : Any>(location: File,
             super.load(purge)
             if (purge)
                 backingMap.clear()
+            var count = 0
+            val limit = if (loadLimit > 0) loadLimit else size
             backingMap.putAll(mapNotNull {
-                val k = deserializeKey(it.key)
-                if (k != null) {
-                    val v = deserializeValue(k, it.value)
-                    if (v != null)
-                        k to v
-                    else
-                        null
+                if (count++ < limit) {
+                    val k = deserializeKey(it.key)
+                    if (k != null) {
+                        val v = deserializeValue(k, it.value)
+                        if (v != null)
+                            k to v
+                        else
+                            null
+                    } else null
                 } else null
             }.toMap())
         }
