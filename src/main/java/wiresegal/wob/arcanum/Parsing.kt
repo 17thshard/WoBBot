@@ -19,12 +19,27 @@ import wiresegal.wob.plugin.visibleCommands
  * Created at 11:40 PM on 2/15/18.
  */
 
+const val EMBED_LIMIT = 6000
+const val TITLE_LIMIT = 256
+const val DESCRIPTION_LIMIT = 2048
+const val FIELDS_LIMIT = 25
+const val FIELD_NAME_LIMIT = 256
+const val FIELD_TEXT_LIMIT = 1024
+const val FOOTER_LIMIT = 2048
+const val MESSAGE_LIMIT = 2000
+
+fun String.capWithSuffix(len: Int, suffix: String): String {
+    if (length <= len)
+        return this
+    return substring(0, len - suffix.length).replace("\\w+$".toRegex(), "").trim() + suffix
+}
+
 fun embedFromContent(titlePrefix: String, entry: Entry): EmbedBuilder {
     val date = entry.date.split("-")
     val month = months[date[1].toInt() - 1]
     val dateStr = "($month ${date[2].removePrefix("0")}, ${date[0]})"
 
-    val title = titlePrefix + entry.eventName + " " + dateStr
+    val title = (titlePrefix + entry.eventName + " " + dateStr).take(TITLE_LIMIT)
 
     val embed = EmbedBuilder()
             .setColor(embedColor)
@@ -39,32 +54,31 @@ fun embedFromContent(titlePrefix: String, entry: Entry): EmbedBuilder {
     if (entry.eventState == ReviewState.APPROVED) flags.add("_Approved_")
 
     if (flags.isNotEmpty())
-        embed.setDescription("**" + flags.joinToString() + "**")
-
-    if (entry.note != null && entry.note.isNotBlank())
-        embed.setFooter("Footnote: " + entry.getFooterText())
+        embed.setDescription("**" + flags.joinToString().take(DESCRIPTION_LIMIT - 4) + "**")
 
     val arcanumSuffix = "*… (Check Arcanum for more.)*"
-    for ((speaker, comment) in entry.lines.map {
-                val speaker = it.getTrueSpeaker().run { if (isEmpty()) "Context" else this }
-                val comment = it.getTrueText()
-                if (comment.length > 1024) speaker to comment.substring(0, 1024 - arcanumSuffix.length)
-                        .replace("\\w+$".toRegex(), "").trim() + arcanumSuffix
-                else speaker to comment
-            }) {
+
+    if (entry.note != null && entry.note.isNotBlank())
+        embed.setFooter(("Footnote: " + entry.getFooterText())
+                .capWithSuffix(FOOTER_LIMIT, arcanumSuffix))
+
+    for ((speaker, comment) in entry.lines.take(FIELDS_LIMIT)
+            .map { it.getTrueSpeaker().run { if (isEmpty()) "Context" else this }.take(FIELD_NAME_LIMIT) to
+                    it.getTrueText().capWithSuffix(FIELD_TEXT_LIMIT, arcanumSuffix) }) {
+        val oldJson = embed.toJsonNode()
         embed.addField(speaker, comment, false)
         val newJson = embed.toJsonNode()
         val footer = newJson.objectNode()
         footer.put("text", "(Too long to display. Check the original for more.)")
         val oldFooter = newJson.get("footer")?.toString() ?: ""
         val size = footer.toString().length - oldFooter.length
-        if (newJson.toString().length > 2000 - size) {
-            newJson.set("footer", footer)
-            return FakeEmbedBuilder(newJson)
+        if (newJson.toString().length > EMBED_LIMIT - size) {
+            oldJson.set("footer", footer)
+            return FakeEmbedBuilder(oldJson)
         }
     }
 
-    if (embed.toJsonNode().toString().length > 2000)
+    if (embed.toJsonNode().toString().length > EMBED_LIMIT)
         return backupEmbed(title, entry)
 
     return embed
@@ -177,7 +191,7 @@ fun notifyOwners(data: String, name: String) = applyToOwners {
 fun User.sendTo(data: String, name: String) {
     val prefix = "$name: "
     when {
-        data.length > 2000 - prefix.length ->
+        data.length > MESSAGE_LIMIT - prefix.length ->
             sendMessage(data.byteInputStream(), "$name.txt")
         data.isEmpty() ->
             sendMessage("Nothing found for $name!")

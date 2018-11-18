@@ -11,6 +11,9 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.nodes.Node
 import org.wikipedia.Wiki
+import wiresegal.wob.arcanum.DESCRIPTION_LIMIT
+import wiresegal.wob.arcanum.EMBED_LIMIT
+import wiresegal.wob.arcanum.TITLE_LIMIT
 import wiresegal.wob.misc.setupControls
 import wiresegal.wob.misc.setupDeletable
 import wiresegal.wob.plugin.sendError
@@ -136,7 +139,7 @@ fun searchResults(searchInfo: String): Pair<Boolean, List<String>> {
 fun embedFromWiki(titlePrefix: String, name: String, entry: Pair<List<String>, String>): EmbedBuilder {
     val (notices, body) = entry
 
-    val title = titlePrefix + name.replace("+", " ").replace("#", ": ")
+    val title = (titlePrefix + name.replace("+", " ").replace("#", ": ")).take(TITLE_LIMIT)
 
     val embed = EmbedBuilder()
             .setColor(wikiEmbedColor)
@@ -150,13 +153,13 @@ fun embedFromWiki(titlePrefix: String, name: String, entry: Pair<List<String>, S
     description.add(body)
 
     var desc = description.joinToString("\n\n")
-    if (desc.length > 1600)
+    if (desc.length > DESCRIPTION_LIMIT)
         desc = desc.substring(0, "\\.[\"”'’]?\\s".toRegex().findAll(desc)
-                .lastOrNull { it.range.start <= 1600 }?.range?.endInclusive ?: 1600)
+                .lastOrNull { it.range.start <= DESCRIPTION_LIMIT }?.range?.endInclusive ?: DESCRIPTION_LIMIT)
 
     embed.setDescription(desc)
 
-    if (embed.toJsonNode().toString().length > 2000)
+    if (embed.toJsonNode().toString().length > EMBED_LIMIT)
         return backupEmbed(titlePrefix, name)
 
     return embed
