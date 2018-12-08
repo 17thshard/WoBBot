@@ -3,6 +3,7 @@ package wiresegal.wob.arcanum
 import de.btobastian.javacord.entities.User
 import de.btobastian.javacord.entities.channels.PrivateChannel
 import de.btobastian.javacord.entities.message.Message
+import de.btobastian.javacord.entities.message.Messageable
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder
 import de.btobastian.javacord.entities.permissions.PermissionState
 import de.btobastian.javacord.entities.permissions.PermissionType
@@ -13,6 +14,7 @@ import wiresegal.wob.misc.setupDeletable
 import wiresegal.wob.misc.util.FakeEmbedBuilder
 import wiresegal.wob.plugin.sendError
 import wiresegal.wob.plugin.visibleCommands
+import java.time.Instant
 
 /**
  * @author WireSegal
@@ -171,13 +173,13 @@ fun applyToOwners(toApply: User.() -> Unit) {
         api.owner.get().toApply()
 }
 
-fun notifyOwners() = notifyOwners {
+fun notifyOwners(launch: Instant) = notifyOwners {
     setColor(embedColor)
     setTitle("Launch Notification")
     addField("Last Commit", "$commitDesc ($commitId)", false)
     addField("Committer", committer.toString(), false)
     addField("Commit Time", version.toString(), false)
-    setTimestamp()
+    setTimestamp(launch)
 }
 
 fun notifyOwners(embed: EmbedBuilder.() -> Unit) = applyToOwners {
@@ -188,7 +190,7 @@ fun notifyOwners(data: String, name: String) = applyToOwners {
     sendTo(data, name)
 }
 
-fun User.sendTo(data: String, name: String) {
+fun Messageable.sendTo(data: String, name: String) {
     val prefix = "$name: "
     when {
         data.length > MESSAGE_LIMIT - prefix.length ->

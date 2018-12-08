@@ -32,20 +32,19 @@ val wikiIconUrl = System.getenv("WIKI_ICON") ?: "https://cdn.discordapp.com/emoj
 val embedColor = Color((System.getenv("ARCANUM_COLOR") ?: "003A52").toInt(16))
 val wikiEmbedColor = Color((System.getenv("WIKI_COLOR") ?: "CB6D51").toInt(16))
 
+fun propertyGetter(name: String) = lazy<String?> {
+    val property = gitProperties.getProperty(name)
+    if (property == null || property.contains("$")) null else property
+}
 
-val version: String? by lazy {
-    val property = gitProperties.getProperty("git.commit.time")
-    if (property == null || property.contains("$")) null else property
+fun propertyGetter(name: String, defaultValue: String) = lazy<String> {
+    val property = gitProperties.getProperty(name)
+    if (property == null || property.contains("$")) defaultValue else property
 }
-val commitId: String? by lazy {
-    val property = gitProperties.getProperty("git.commit.id.abbrev")
-    if (property == null || property.contains("$")) null else property
-}
-val commitDesc: String? by lazy {
-    val property = gitProperties.getProperty("git.commit.message.short")
-    if (property == null || property.contains("$")) null else property
-}
-val committer: String? by lazy {
-    val property = gitProperties.getProperty("git.commit.user.name")
-    if (property == null || property.contains("$")) null else property
-}
+
+val version by propertyGetter("git.commit.time")
+val fullCommit by propertyGetter("git.commit.id")
+val commitId by propertyGetter("git.commit.id.abbrev")
+val commitDesc by propertyGetter("git.commit.message.short")
+val committer by propertyGetter("git.commit.user.name")
+val origin by propertyGetter("git.remote.origin.url", "https://github.com/Palanaeum/WoBBot.git")

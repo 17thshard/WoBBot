@@ -2,16 +2,19 @@ package wiresegal.wob.plugin
 
 import de.btobastian.javacord.entities.DiscordEntity
 import de.btobastian.javacord.entities.Mentionable
+import de.btobastian.javacord.entities.User
 import de.btobastian.javacord.entities.channels.GroupChannel
 import de.btobastian.javacord.entities.channels.PrivateChannel
 import de.btobastian.javacord.entities.channels.TextChannel
 import de.btobastian.javacord.entities.message.Message
+import de.btobastian.javacord.entities.message.Messageable
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder
+import wiresegal.wob.*
+import wiresegal.wob.arcanum.DESCRIPTION_LIMIT
 import wiresegal.wob.arcanum.notifyOwners
 import wiresegal.wob.arcanum.sendTo
 import wiresegal.wob.misc.setupControls
 import wiresegal.wob.misc.setupDeletable
-import wiresegal.wob.wobCommand
 import java.awt.Color
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -59,23 +62,38 @@ fun TextChannel.sendRandomEmbed(requester: DiscordEntity, title: String, message
 }
 
 fun Message.sendError(message: String, error: Exception) {
-    channel.sendError(this, message, error)
+    channel.sendError(this.content, message, error)
 }
 
-fun TextChannel.sendError(replyingTo: Message, message: String, error: Exception) {
-    val fullTrace = StringWriter().apply { PrintWriter(this).apply { error.printStackTrace(this) } }.toString()
-    val trace = fullTrace.split("\n").take(5).joinToString("\n")
+fun String.getClassMarkdown(clazzName: String, realName: String, line: Int = -1): String {
+    if (!origin.endsWith(".git") || fullCommit == null)
+        return this
 
-    sendMessage(EmbedBuilder().apply {
-        setTitle("ERROR")
-        setColor(Color.RED)
-        setFooter(message)
-        setDescription("`$trace`")
-    })
+    val me = EmbeddedInfo::class.java
+    try {
+        val clazz = Class.forName(clazzName, true, me.classLoader)
 
-    error.printStackTrace()
+        if (clazz.protectionDomain.codeSource != me.protectionDomain.codeSource)
+            return this
 
-    val location = when(this) {
+        val split = clazzName.split('.').dropLast(1).joinToString("/")
+
+        val baseUrl = origin.removeSuffix(".git")
+        var url = "$baseUrl/blob/$fullCommit/src/main/java/$split/$realName"
+        if (line >= 0)
+            url += "#L$line"
+
+        return "[$this]($url)"
+
+    } catch (e: ClassNotFoundException) {
+        return this
+    }
+}
+
+fun Messageable.sendError(replyingTo: String, message: String, error: Exception) {
+    val fullTrace = StringWriter().apply { error.printStackTrace(PrintWriter(this)) }.toString()
+
+    val location = when (this) {
         is Mentionable -> "in " + this.mentionTag + "\n"
         is PrivateChannel -> "in " + this.recipient.mentionTag + "\n"
         is GroupChannel -> "in " + (this.name.orElse(null)?.plus("\n") ?: "") +
@@ -83,22 +101,49 @@ fun TextChannel.sendError(replyingTo: Message, message: String, error: Exception
         else -> ""
     }
 
+    var trace = "`$error`"
+
+    for (line in error.stackTrace) {
+        val lineString = line.run {
+            "\n\u2003`at $className.$methodName`(" + (if (isNativeMethod)
+                "Native Method"
+            else if (fileName != null && lineNumber >= 0)
+                "$fileName:$lineNumber".getClassMarkdown(className, fileName, lineNumber)
+            else
+                fileName?.getClassMarkdown(className, fileName) ?: "Unknown Source") + ")"
+        }
+
+        if (location.length + lineString.length + trace.length < DESCRIPTION_LIMIT)
+            trace += lineString
+        else break
+    }
+
+    sendMessage(EmbedBuilder().apply {
+        setTitle("ERROR")
+        setColor(Color.RED)
+        setFooter(message)
+        setDescription(trace)
+    })
+
+    error.printStackTrace()
 
     val wireID = 77084495118868480L
     val ownerID = api.ownerId
 
-    if (this !is PrivateChannel || !((this.recipient.id == wireID && wobCommand == "wob") || this.recipient.id == ownerID)) {
+    val myId = (this as? User)?.id ?: (this as? PrivateChannel)?.recipient?.id
+
+    if ((myId == wireID && wobCommand == "wob") || myId == ownerID) {
+        sendTo(replyingTo, "message")
+        sendTo(fullTrace, "error")
+    } else {
         notifyOwners {
             setTitle("ERROR")
             setColor(Color.RED)
             setFooter(message)
-            setDescription("$location`$trace`")
+            setDescription(location + trace)
         }
 
-        notifyOwners(replyingTo.content, "message")
+        notifyOwners(replyingTo, "message")
         notifyOwners(fullTrace, "error")
-    } else if ((this.recipient.id == wireID && wobCommand == "wob") || this.recipient.id == ownerID) {
-        this.recipient.sendTo(replyingTo.content, "message")
-        this.recipient.sendTo(fullTrace, "error")
     }
 }

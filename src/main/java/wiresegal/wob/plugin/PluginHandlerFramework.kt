@@ -30,30 +30,57 @@ data class DocumentedCommand(val matches: (Message) -> Boolean,
 val textHandlers = mutableListOf<TextHandler>()
 val visibleCommands = mutableListOf<DocumentedCommand>()
 
+fun addHiddenCommand(keyword: String, handle: InputFunction) {
+    textHandlers.add(TextHandler({ it, _, _, _ -> it.startsWith("!$keyword ") || it == "!$keyword" }, handle))
+}
+
+fun addHiddenCommand(keyword: String, alias: List<String>, handle: InputFunction) {
+    addHiddenCommand(keyword, handle)
+    for (a in alias)
+        addHiddenCommand(a, handle)
+}
+
+fun addHiddenAdminCommand(keyword: String, handle: InputFunction) {
+    textHandlers.add(TextHandler({ it, _, _, msg -> msg.checkPermissions(BotRanks.ADMIN) && (it.startsWith("!$keyword ") || it == "!$keyword") }, handle))
+}
+
+fun addHiddenAdminCommand(keyword: String, alias: List<String>, handle: InputFunction) {
+    addHiddenAdminCommand(keyword, handle)
+    for (a in alias)
+        addHiddenAdminCommand(a, handle)
+}
+
 fun addCommand(keyword: String, handle: InputFunction) {
     visibleCommands.add(DocumentedCommand({ true }, "!$keyword"))
-    textHandlers.add(TextHandler({ it, _, _, _ -> it.startsWith("!$keyword ") || it == "!$keyword" }, handle))
+    addHiddenCommand(keyword, handle)
+}
+
+fun addCommand(keyword: String, alias: List<String>, handle: InputFunction) {
+    addCommand(keyword, handle)
+    for (a in alias)
+        addHiddenCommand(a, handle)
 }
 
 fun addAdminCommand(keyword: String, handle: InputFunction) {
     visibleCommands.add(DocumentedCommand({ it.checkPermissions(BotRanks.ADMIN) }, "!$keyword (Admin only)"))
-    textHandlers.add(TextHandler({ it, _, _, msg -> msg.checkPermissions(BotRanks.ADMIN) && (it.startsWith("!$keyword ") || it == "!$keyword") }, handle))
+    addHiddenAdminCommand(keyword, handle)
 }
 
 fun addAdminCommand(keyword: String, alias: List<String>, handle: InputFunction) {
-    visibleCommands.add(DocumentedCommand({ it.checkPermissions(BotRanks.ADMIN) }, "!$keyword (Admin only)"))
-    textHandlers.add(TextHandler({ it, _, _, msg -> msg.checkPermissions(BotRanks.ADMIN) && (it.startsWith("!$keyword ") || it == "!$keyword") }, handle))
+    addAdminCommand(keyword, handle)
     for (a in alias)
-        textHandlers.add(TextHandler({ it, _, _, msg -> msg.checkPermissions(BotRanks.ADMIN) && (it.startsWith("!$a ") || it == "!$a") }, handle))
-
+        addHiddenAdminCommand(a, handle)
 }
 
-fun addCommand(keyword: String, alias: List<String>, handle: InputFunction) {
-    visibleCommands.add(DocumentedCommand({ true }, "!$keyword"))
-    textHandlers.add(TextHandler({ it, _, _, _ -> it.startsWith("!$keyword ") || it == "!$keyword" }, handle))
-    for (a in alias)
-        textHandlers.add(TextHandler({ it, _, _, _ -> it.startsWith("!$a ") || it == "!$a" }, handle))
+fun addSoftHiddenCommand(keyword: String, handle: InputFunction) {
+    visibleCommands.add(DocumentedCommand({ it.checkPermissions(BotRanks.ADMIN) }, "!$keyword"))
+    addHiddenCommand(keyword, handle)
+}
 
+fun addSoftHiddenCommand(keyword: String, alias: List<String>, handle: InputFunction) {
+    addSoftHiddenCommand(keyword, handle)
+    for (a in alias)
+        addHiddenCommand(a, handle)
 }
 
 fun addCalloutHandler(callout: String, handle: InputFunction) {

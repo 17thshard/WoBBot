@@ -218,6 +218,17 @@ fun registerBuiltinHandlers() {
         message.channel.sendMessage(embedFromContent("", randomEntry())).get().setupDeletable(message.author)
     }
 
+    addSoftHiddenCommand("${wobCommand}version") { _, _, _, message ->
+        message.channel.sendMessage(EmbedBuilder().apply {
+            setColor(embedColor)
+            setTitle("Bot Version")
+            addField("Last Commit", "$commitDesc ($commitId)", false)
+            addField("Committer", committer.toString(), false)
+            addField("Commit Time", version.toString(), false)
+            setTimestamp(launch)
+        })
+    }
+
     if (wobCommand == "wob") {
         addHiddenCalloutHandler("saythewords") { _, _, _, message ->
             message.channel.sendMessage("**`Life before death.`**\n" +

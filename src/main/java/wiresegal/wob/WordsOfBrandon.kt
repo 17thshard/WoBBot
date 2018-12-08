@@ -4,12 +4,15 @@ import de.btobastian.javacord.DiscordApi
 import de.btobastian.javacord.DiscordApiBuilder
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder
 import de.btobastian.javacord.utils.logging.LoggerUtil
+import wiresegal.wob.arcanum.applyToOwners
 import wiresegal.wob.arcanum.notifyOwners
 import wiresegal.wob.misc.actOnReaction
 import wiresegal.wob.misc.finalizeMessage
 import wiresegal.wob.misc.util.SavedTypedMap
 import wiresegal.wob.misc.util.async
 import wiresegal.wob.misc.util.fileInHome
+import wiresegal.wob.plugin.sendError
+import java.time.Instant
 
 /**
  * @author WireSegal
@@ -43,20 +46,26 @@ val messagesWithEmbedLists by lazy {
         null
     }, false, loadLimit = 50)
 }
-val messageToAuthor = SavedTypedMap(fileInHome("wob_bot_deletable"), { it.toString() }, {
-    it.toLongOrNull() ?: 0L
-},
-        { _, value -> value.toString() }, { _, value -> value.toLongOrNull() ?: 0L })
-val permissions = SavedTypedMap(fileInHome("wob_bot_permissions"), { it.toString() }, {
-    it.toLongOrNull() ?: 0L
-},
-        { _, value -> value.joinToString(",") }, { _, value -> value.split(",").mapNotNull { it.toLongOrNull() } })
+val messageToAuthor = SavedTypedMap(fileInHome("wob_bot_deletable"),
+        { it.toString() },
+        { it.toLongOrNull() ?: 0L },
+        { _, value -> value.toString() },
+        { _, value -> value.toLongOrNull() ?: 0L })
+val permissions = SavedTypedMap(fileInHome("wob_bot_permissions"),
+        { it.toString() },
+        { it.toLongOrNull() ?: 0L },
+        { _, value -> value.joinToString(",") },
+        { _, value -> value.split(",").mapNotNull { it.toLongOrNull() } })
 
+val launch: Instant = Instant.now()
 
 fun main(args: Array<String>) {
     LoggerUtil.getLogger("WoB").debug("Running version built at $version")
 
-    notifyOwners()
+    notifyOwners(launch)
+    applyToOwners {
+        sendError("nothin", "whoa, error time", RuntimeException())
+    }
 
     registerAll()
 
