@@ -63,9 +63,6 @@ fun main(args: Array<String>) {
     LoggerUtil.getLogger("WoB").debug("Running version built at $version")
 
     notifyOwners(launch)
-    applyToOwners {
-        sendError("nothin", "whoa, error time", RuntimeException())
-    }
 
     registerAll()
 
