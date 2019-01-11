@@ -9,8 +9,10 @@ import de.btobastian.javacord.entities.permissions.PermissionState
 import de.btobastian.javacord.entities.permissions.PermissionType
 import de.btobastian.javacord.entities.permissions.PermissionsBuilder
 import wiresegal.wob.*
+import wiresegal.wob.misc.catch
 import wiresegal.wob.misc.setupControls
 import wiresegal.wob.misc.setupDeletable
+import wiresegal.wob.misc.then
 import wiresegal.wob.misc.util.FakeEmbedBuilder
 import wiresegal.wob.plugin.sendError
 import wiresegal.wob.plugin.visibleCommands
@@ -114,8 +116,7 @@ fun harvestFromSearch(terms: List<String>): List<EmbedBuilder> {
 
 fun searchWoB(message: Message, terms: List<String>) {
     var type = AutoCloseable {}
-    try {
-        val it = message.channel.sendMessage("Searching for \"${terms.joinToString(" ")}\"...").get()
+    message.channel.sendMessage("Searching for \"${terms.joinToString(" ")}\"...").then {
         type = message.channel.typeContinuously()
         val allEmbeds = harvestFromSearch(terms)
 
@@ -126,17 +127,18 @@ fun searchWoB(message: Message, terms: List<String>) {
             allEmbeds.size == 1 -> {
                 val finalEmbed = allEmbeds.first()
                 finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
-                message.channel.sendMessage(finalEmbed).get().setupDeletable(message.author)
+                message.channel.sendMessage(finalEmbed).setupDeletable(message.author)
             }
             else ->
-                message.channel.sendMessage(allEmbeds.first()).handle { u, _ -> type.close(); u }.get()
+                message.channel.sendMessage(allEmbeds.first())
+                        .then { type.close() }
                         .setupDeletable(message.author).setupControls(message.author, 0, allEmbeds)
         }
         if (it.channel !is PrivateChannel)
             it.delete()
-    } catch (e: Exception) {
+    }.catch {
         type.close()
-        message.sendError("An error occurred trying to look up the entry.", e)
+        message.sendError("An error occurred trying to look up the entry.", it)
     }
 }
 

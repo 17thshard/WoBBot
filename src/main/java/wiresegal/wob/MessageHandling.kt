@@ -104,7 +104,7 @@ fun registerBuiltinHandlers() {
 
             for (wob in allWobs) async {
                 val theWob = entryFromId(wob.groupValues[1].toInt())
-                message.channel.sendMessage(embedFromContent("", theWob)).get().setupDeletable(message.author)
+                message.channel.sendMessage(embedFromContent("", theWob)).setupDeletable(message.author)
             }
 
             val terms = "[\"“]([\\w\\s,+!|&]+)[\"”]".toRegex().findAll(content).toList()
@@ -132,7 +132,7 @@ fun registerBuiltinHandlers() {
                     if (wiki.getPageInfo(rawName)["exists"] as Boolean) {
                         val pageName = wiki.resolveFragmentRedirect(rawName) ?: rawName
                         val preview = fetchPreview(pageName)
-                        message.channel.sendMessage(embedFromWiki("", pageName, preview)).get().setupDeletable(message.author)
+                        message.channel.sendMessage(embedFromWiki("", pageName, preview)).setupDeletable(message.author)
                     }
                 }
 
@@ -215,7 +215,7 @@ fun registerBuiltinHandlers() {
     }
 
     addCommand("${wobCommand}random") { _, _, _, message ->
-        message.channel.sendMessage(embedFromContent("", randomEntry())).get().setupDeletable(message.author)
+        message.channel.sendMessage(embedFromContent("", randomEntry())).setupDeletable(message.author)
     }
 
     addSoftHiddenCommand("${wobCommand}version") { _, _, _, message ->

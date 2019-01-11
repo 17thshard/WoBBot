@@ -9,6 +9,7 @@ import wiresegal.wob.messageToAuthor
 import wiresegal.wob.messagesWithEmbedLists
 import wiresegal.wob.misc.util.BotRanks
 import wiresegal.wob.misc.util.checkPermissions
+import java.util.concurrent.CompletableFuture
 
 /**
  * @author WireSegal
@@ -36,6 +37,14 @@ fun updateMessageWithJump(jump: Int, message: Message, entry: EmbeddedInfo) {
     }
 }
 
+fun <T> CompletableFuture<out T>.then(code: (T) -> Unit): CompletableFuture<T> = thenApply { code(it); it }
+fun <T> CompletableFuture<T>.catch(code: (Throwable) -> Unit): CompletableFuture<T?> = exceptionally { code(it); null }
+
+fun CompletableFuture<out Message>.setupDeletable(author: DiscordEntity) = setupDeletable(author.id)
+
+fun CompletableFuture<out Message>.setupDeletable(id: Long): CompletableFuture<Message>
+        = then { it.setupDeletable(id) }
+
 fun Message.setupDeletable(author: DiscordEntity) = setupDeletable(author.id)
 
 fun Message.setupDeletable(id: Long): Message {
@@ -43,6 +52,9 @@ fun Message.setupDeletable(id: Long): Message {
     addReaction(no)
     return this
 }
+
+fun CompletableFuture<out Message>.setupControls(requester: DiscordEntity, index: Int, embeds: List<EmbedBuilder>): CompletableFuture<Message>
+        = then { it.setupControls(requester, index, embeds) }
 
 fun Message.setupControls(requester: DiscordEntity, index: Int, embeds: List<EmbedBuilder>): Message {
     if (embeds.size > 2)
@@ -70,33 +82,34 @@ fun Message.finalizeMessage(uid: Long) {
 }
 
 fun actOnReaction(it: ReactionAddEvent) {
-    val message = it.requestMessage().get()
-    if (it.reaction.isPresent) {
-        val reaction = it.reaction.get()
-        if (message.author.isYourself && reaction.emoji.isUnicodeEmoji) {
-            val unicode = reaction.emoji.asUnicodeEmoji().get()
-            if (!it.user.isBot && unicode in validReactions) {
-                if (unicode == no) {
-                    if (it.user.checkPermissions(messageToAuthor[message.id], message.channel, BotRanks.USER))
-                        it.deleteMessage()
-                    else
-                        it.removeReaction()
-                } else {
-                    val messageValue = messagesWithEmbedLists[message.id]
-                    if (messageValue != null) {
-                        val (uid, _, _, embeds) = messageValue
-                        if (it.user.checkPermissions(uid, message.channel, BotRanks.USER)) {
-                            when (unicode) {
-                                arrowLeft -> updateMessageWithJump(-1, message, messageValue)
-                                jumpLeft -> updateMessageWithJump(-10, message, messageValue)
-                                first -> updateMessageWithJump(-embeds.size, message, messageValue)
-                                arrowRight -> updateMessageWithJump(1, message, messageValue)
-                                jumpRight -> updateMessageWithJump(10, message, messageValue)
-                                last -> updateMessageWithJump(embeds.size, message, messageValue)
-                                done -> message.finalizeMessage(uid)
+    it.requestMessage().then { message ->
+        if (it.reaction.isPresent) {
+            val reaction = it.reaction.get()
+            if (message.author.isYourself && reaction.emoji.isUnicodeEmoji) {
+                val unicode = reaction.emoji.asUnicodeEmoji().get()
+                if (!it.user.isBot && unicode in validReactions) {
+                    if (unicode == no) {
+                        if (it.user.checkPermissions(messageToAuthor[message.id], message.channel, BotRanks.USER))
+                            it.deleteMessage()
+                        else
+                            it.removeReaction()
+                    } else {
+                        val messageValue = messagesWithEmbedLists[message.id]
+                        if (messageValue != null) {
+                            val (uid, _, _, embeds) = messageValue
+                            if (it.user.checkPermissions(uid, message.channel, BotRanks.USER)) {
+                                when (unicode) {
+                                    arrowLeft -> updateMessageWithJump(-1, message, messageValue)
+                                    jumpLeft -> updateMessageWithJump(-10, message, messageValue)
+                                    first -> updateMessageWithJump(-embeds.size, message, messageValue)
+                                    arrowRight -> updateMessageWithJump(1, message, messageValue)
+                                    jumpRight -> updateMessageWithJump(10, message, messageValue)
+                                    last -> updateMessageWithJump(embeds.size, message, messageValue)
+                                    done -> message.finalizeMessage(uid)
+                                }
                             }
+                            it.removeReaction()
                         }
-                        it.removeReaction()
                     }
                 }
             }

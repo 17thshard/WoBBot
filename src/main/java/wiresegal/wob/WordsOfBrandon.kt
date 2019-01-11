@@ -4,14 +4,12 @@ import de.btobastian.javacord.DiscordApi
 import de.btobastian.javacord.DiscordApiBuilder
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder
 import de.btobastian.javacord.utils.logging.LoggerUtil
-import wiresegal.wob.arcanum.applyToOwners
 import wiresegal.wob.arcanum.notifyOwners
 import wiresegal.wob.misc.actOnReaction
 import wiresegal.wob.misc.finalizeMessage
 import wiresegal.wob.misc.util.SavedTypedMap
 import wiresegal.wob.misc.util.async
 import wiresegal.wob.misc.util.fileInHome
-import wiresegal.wob.plugin.sendError
 import java.time.Instant
 
 /**

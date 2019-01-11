@@ -49,7 +49,7 @@ fun TextChannel.sendRandomEmbed(requester: DiscordEntity, title: String, color: 
     val index = (Math.random() * embeds.size).toInt()
     val embed = embeds[index]
 
-    sendMessage(embed).get().setupDeletable(requester).setupControls(requester, index, embeds)
+    sendMessage(embed).setupDeletable(requester).setupControls(requester, index, embeds)
 }
 
 fun TextChannel.sendRandomEmbed(requester: DiscordEntity, title: String, messages: Array<Pair<String, Pair<String, Color>>>) {
@@ -58,10 +58,10 @@ fun TextChannel.sendRandomEmbed(requester: DiscordEntity, title: String, message
     val index = (Math.random() * embeds.size).toInt()
     val embed = embeds[index]
 
-    sendMessage(embed).get().setupDeletable(requester).setupControls(requester, index, embeds)
+    sendMessage(embed).setupDeletable(requester).setupControls(requester, index, embeds)
 }
 
-fun Message.sendError(message: String, error: Exception) {
+fun Message.sendError(message: String, error: Throwable) {
     channel.sendError(this.content, message, error)
 }
 
@@ -90,7 +90,7 @@ fun String.getClassMarkdown(clazzName: String, realName: String, line: Int = -1)
     }
 }
 
-fun Messageable.sendError(replyingTo: String, message: String, error: Exception) {
+fun Messageable.sendError(replyingTo: String, message: String, error: Throwable) {
     val fullTrace = StringWriter().apply { error.printStackTrace(PrintWriter(this)) }.toString()
 
     val location = when (this) {
