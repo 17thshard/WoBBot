@@ -22,6 +22,7 @@ import wiresegal.wob.plugin.sendError
 import wiresegal.wob.wikiEmbedColor
 import wiresegal.wob.wikiIconUrl
 import wiresegal.wob.wikiTarget
+import java.io.FileNotFoundException
 
 /**
  * @author WireSegal
@@ -198,15 +199,19 @@ fun searchCoppermind(message: Message, terms: List<String>) {
 
         type.close()
 
-        when {
-            allEmbeds.isEmpty() -> message.channel.sendMessage("Couldn't find any articles for \"${terms.joinToString(" ")}\".")
-            allEmbeds.size == 1 -> {
-                val finalEmbed = allEmbeds.first()
-                finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
-                message.channel.sendMessage(finalEmbed).setupDeletable(message.author)
+        try {
+            when {
+                allEmbeds.isEmpty() -> message.channel.sendMessage("Couldn't find any articles for \"${terms.joinToString(" ")}\".")
+                allEmbeds.size == 1 -> {
+                    val finalEmbed = allEmbeds.first()
+                    finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
+                    message.channel.sendMessage(finalEmbed).setupDeletable(message.author)
+                }
+                else ->
+                    message.channel.sendMessage(allEmbeds.first()).setupDeletable(message.author).setupControls(message.author, 0, allEmbeds)
             }
-            else ->
-                message.channel.sendMessage(allEmbeds.first()).setupDeletable(message.author).setupControls(message.author, 0, allEmbeds)
+        } catch (e: FileNotFoundException) {
+            message.channel.sendMessage("Couldn't find any articles for \"${terms.joinToString(" ")}\".")
         }
         if (it.channel !is PrivateChannel)
             it.delete()
