@@ -40,8 +40,10 @@ fun String.capWithSuffix(len: Int, suffix: String): String {
 
 fun embedFromContent(titlePrefix: String, entry: Entry): EmbedBuilder {
     val date = entry.date.split("-")
-    val month = months[date[1].toInt() - 1]
-    val dateStr = "($month ${date[2].removePrefix("0")}, ${date[0]})"
+    val dateStr = if (date.size >= 3) {
+        "(${months[date[1].toInt() - 1]} ${date[2].removePrefix("0")}, ${date[0]})"
+    } else
+        entry.date
 
     val title = (titlePrefix + entry.eventName + " " + dateStr).take(TITLE_LIMIT)
 
