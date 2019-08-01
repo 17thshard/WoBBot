@@ -23,6 +23,7 @@ import wiresegal.wob.wikiEmbedColor
 import wiresegal.wob.wikiIconUrl
 import wiresegal.wob.wikiTarget
 import java.io.FileNotFoundException
+import java.net.HttpURLConnection
 
 /**
  * @author WireSegal
@@ -75,7 +76,29 @@ class Coppermind : Wiki(wikiTarget) {
     }
 
     override fun fetch(url: String, caller: String): String {
-        return super.fetch(url.replace("&intoken=[^&]+".toRegex(), ""), caller)
+        val fetchedUrl = url.replace("&intoken=[^&]+".toRegex(), "")
+
+        // Wiki library doesn't actually check if stream is gzipped, so do it manually
+        isUsingCompressedRequests = isGzipped(url)
+
+        return super.fetch(fetchedUrl, caller)
+    }
+
+    private fun isGzipped(url: String): Boolean {
+        isUsingCompressedRequests = true
+
+        val connection = makeConnection(url) as? HttpURLConnection ?: return false
+        connection.requestMethod = "HEAD"
+        connection.connectTimeout = 30000
+        connection.readTimeout = 180000
+        setCookies(connection)
+        connection.connect()
+
+        val gzipped = connection.getHeaderField("Content-Encoding") == "gzip"
+
+        connection.disconnect()
+
+        return gzipped
     }
 }
 
