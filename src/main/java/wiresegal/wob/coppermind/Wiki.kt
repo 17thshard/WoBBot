@@ -191,7 +191,7 @@ fun searchResults(searchInfo: String): Pair<Boolean, List<String>> {
     else {
         val search = searchInfo.split("\\s+".toRegex())
         val allArticles = wiki.search(searchInfo)
-            .map { it.first() }
+                .map { it.first() }
         val raw = allArticles.firstOrNull { it.toLowerCase() == rawName.toLowerCase() }
         if (raw != null)
             false to listOf(wiki.resolveFragmentRedirect(raw) ?: raw)
@@ -199,8 +199,8 @@ fun searchResults(searchInfo: String): Pair<Boolean, List<String>> {
             val articles = allArticles.take(10)
             val redirected = wiki.resolveRedirects(articles.toTypedArray())
             (articles.size != allArticles.size) to redirected.mapIndexed { idx, it -> it ?: articles[idx] }
-                .toSet()
-                .sortedBy { search.count { term -> term in it } }
+                    .toSet()
+                    .sortedBy { search.count { term -> term in it } }
         }
     }
 
@@ -212,10 +212,10 @@ fun embedFromWiki(titlePrefix: String, name: String, entry: Pair<List<String>, S
     val title = (titlePrefix + name.replace("+", " ").replace("#", ": ")).take(TITLE_LIMIT)
 
     val embed = EmbedBuilder()
-        .setColor(wikiEmbedColor)
-        .setTitle(title)
-        .setUrl("https://$wikiTarget/wiki/" + name.replace("[+\\s]".toRegex(), "_"))
-        .setThumbnail(wikiIconUrl)
+            .setColor(wikiEmbedColor)
+            .setTitle(title)
+            .setUrl("https://$wikiTarget/wiki/" + name.replace("[+\\s]".toRegex(), "_"))
+            .setThumbnail(wikiIconUrl)
 
     val description = mutableListOf<String>()
 
@@ -225,7 +225,7 @@ fun embedFromWiki(titlePrefix: String, name: String, entry: Pair<List<String>, S
     var desc = description.joinToString("\n\n")
     if (desc.length > DESCRIPTION_LIMIT)
         desc = desc.substring(0, "\\.[\"”'’]?\\s".toRegex().findAll(desc)
-            .lastOrNull { it.range.start <= DESCRIPTION_LIMIT }?.range?.endInclusive ?: DESCRIPTION_LIMIT)
+                .lastOrNull { it.range.start <= DESCRIPTION_LIMIT }?.range?.endInclusive ?: DESCRIPTION_LIMIT)
 
     embed.setDescription(desc)
 
@@ -237,8 +237,8 @@ fun embedFromWiki(titlePrefix: String, name: String, entry: Pair<List<String>, S
 
 fun backupEmbed(title: String, name: String): EmbedBuilder {
     return EmbedBuilder().setColor(wikiEmbedColor).setTitle(title + name.replace("+", " ").replace("#", ": "))
-        .setUrl("https://$wikiTarget/wiki/" + name.replace("[+\\s]".toRegex(), "_"))
-        .setThumbnail(wikiIconUrl).setDescription("An error occurred in loading the wiki preview.")
+            .setUrl("https://$wikiTarget/wiki/" + name.replace("[+\\s]".toRegex(), "_"))
+            .setThumbnail(wikiIconUrl).setDescription("An error occurred in loading the wiki preview.")
 }
 
 fun harvestFromWiki(terms: List<String>): List<EmbedBuilder> {
@@ -250,7 +250,7 @@ fun harvestFromWiki(terms: List<String>): List<EmbedBuilder> {
 
     for ((idx, article) in allArticles.withIndex()) {
         val (name, body) = article
-        val titleText = "Search: \"${terms.joinToString(" ")}\" (${idx + 1}/$size) \n"
+        val titleText = "Search: \"${terms.joinToString(" ")}\" (${idx+1}/$size) \n"
         allEmbeds.add(embedFromWiki(titleText, name, body))
     }
 
