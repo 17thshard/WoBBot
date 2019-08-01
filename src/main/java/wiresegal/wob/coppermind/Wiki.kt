@@ -23,7 +23,9 @@ import wiresegal.wob.wikiEmbedColor
 import wiresegal.wob.wikiIconUrl
 import wiresegal.wob.wikiTarget
 import java.io.FileNotFoundException
-import java.net.HttpURLConnection
+import java.net.URLConnection
+import java.util.logging.Level
+import java.util.zip.GZIPInputStream
 
 /**
  * @author WireSegal
@@ -39,6 +41,7 @@ fun Remark.convert(node: List<Node>, base: String): String = convertFragment(nod
 fun Remark.convert(node: Node, base: String): String = convertFragment(node.toString(), base)
 
 class Coppermind : Wiki(wikiTarget) {
+    private val cookies = mutableMapOf<String, String>()
 
     fun getSectionHTML(title: String): String {
         return parse(getPageText(title)).replace("API", title.replace("[+_]".toRegex(), " "))
@@ -78,27 +81,68 @@ class Coppermind : Wiki(wikiTarget) {
     override fun fetch(url: String, caller: String): String {
         val fetchedUrl = url.replace("&intoken=[^&]+".toRegex(), "")
 
-        // Wiki library doesn't actually check if stream is gzipped, so do it manually
-        isUsingCompressedRequests = isGzipped(url)
+        this.logurl(fetchedUrl, caller)
 
-        return super.fetch(fetchedUrl, caller)
-    }
-
-    private fun isGzipped(url: String): Boolean {
-        isUsingCompressedRequests = true
-
-        val connection = makeConnection(url) as? HttpURLConnection ?: return false
-        connection.requestMethod = "HEAD"
+        val connection = makeConnection(url)
         connection.connectTimeout = 30000
         connection.readTimeout = 180000
-        setCookies(connection)
+
+        connection.setRequestProperty("Accept-Encoding", "gzip")
+        connection.setRequestProperty("Cookie", cookies.entries.joinToString("; ") { "${it.key}=${it.value}" });
+        connection.setRequestProperty("User-Agent", this.userAgent)
+
         connection.connect()
+
+        connection.updateCookies()
+
+        // Lag control mimics original
+        val lag = connection.getHeaderFieldInt("X-Database-Lag", -5)
+        if (lag > maxLag) {
+            try {
+                synchronized(this) {
+                    val time = connection.getHeaderFieldInt("Retry-After", 10)
+                    this.log(Level.WARNING, caller, "Current database lag $lag s exceeds $maxLag s, waiting $time s.")
+                    Thread.sleep((time * 1000).toLong())
+                }
+            } catch (exception: InterruptedException) {
+            }
+
+            return this.fetch(url, caller)
+        }
 
         val gzipped = connection.getHeaderField("Content-Encoding") == "gzip"
 
-        connection.disconnect()
+        val stream = if (gzipped) GZIPInputStream(connection.getInputStream()) else connection.getInputStream()
+        val response = stream.bufferedReader().use { it.readText() }
 
-        return gzipped
+        if ("<error code=" in response) {
+            if (assertionMode and ASSERT_BOT == ASSERT_BOT && "error code=\"assertbotfailed\"" in response) {
+                throw AssertionError("Bot privileges missing or revoked, or session expired.")
+            }
+
+            if (assertionMode and ASSERT_USER == ASSERT_USER && "error code=\"assertuserfailed\"" in response) {
+                throw AssertionError("Session expired.")
+            }
+
+            if ("code=\"rvnosuchsection" !in response) {
+                throw UnknownError("MW API error. Server response was: $response")
+            }
+        }
+
+        return response
+    }
+
+    private fun URLConnection.updateCookies() {
+        val cookieHeaders = headerFields["Set-Cookie"] ?: return
+        for (header in cookieHeaders) {
+            val cookie = header.substringBefore(';')
+            val key = cookie.substringBefore('=')
+            val value = cookie.substringAfter('=')
+
+            if (value != "deleted") {
+                cookies[key] = value
+            }
+        }
     }
 }
 
@@ -147,7 +191,7 @@ fun searchResults(searchInfo: String): Pair<Boolean, List<String>> {
     else {
         val search = searchInfo.split("\\s+".toRegex())
         val allArticles = wiki.search(searchInfo)
-                .map { it.first() }
+            .map { it.first() }
         val raw = allArticles.firstOrNull { it.toLowerCase() == rawName.toLowerCase() }
         if (raw != null)
             false to listOf(wiki.resolveFragmentRedirect(raw) ?: raw)
@@ -155,8 +199,8 @@ fun searchResults(searchInfo: String): Pair<Boolean, List<String>> {
             val articles = allArticles.take(10)
             val redirected = wiki.resolveRedirects(articles.toTypedArray())
             (articles.size != allArticles.size) to redirected.mapIndexed { idx, it -> it ?: articles[idx] }
-                    .toSet()
-                    .sortedBy { search.count { term -> term in it } }
+                .toSet()
+                .sortedBy { search.count { term -> term in it } }
         }
     }
 
@@ -168,10 +212,10 @@ fun embedFromWiki(titlePrefix: String, name: String, entry: Pair<List<String>, S
     val title = (titlePrefix + name.replace("+", " ").replace("#", ": ")).take(TITLE_LIMIT)
 
     val embed = EmbedBuilder()
-            .setColor(wikiEmbedColor)
-            .setTitle(title)
-            .setUrl("https://$wikiTarget/wiki/" + name.replace("[+\\s]".toRegex(), "_"))
-            .setThumbnail(wikiIconUrl)
+        .setColor(wikiEmbedColor)
+        .setTitle(title)
+        .setUrl("https://$wikiTarget/wiki/" + name.replace("[+\\s]".toRegex(), "_"))
+        .setThumbnail(wikiIconUrl)
 
     val description = mutableListOf<String>()
 
@@ -181,7 +225,7 @@ fun embedFromWiki(titlePrefix: String, name: String, entry: Pair<List<String>, S
     var desc = description.joinToString("\n\n")
     if (desc.length > DESCRIPTION_LIMIT)
         desc = desc.substring(0, "\\.[\"”'’]?\\s".toRegex().findAll(desc)
-                .lastOrNull { it.range.start <= DESCRIPTION_LIMIT }?.range?.endInclusive ?: DESCRIPTION_LIMIT)
+            .lastOrNull { it.range.start <= DESCRIPTION_LIMIT }?.range?.endInclusive ?: DESCRIPTION_LIMIT)
 
     embed.setDescription(desc)
 
@@ -193,8 +237,8 @@ fun embedFromWiki(titlePrefix: String, name: String, entry: Pair<List<String>, S
 
 fun backupEmbed(title: String, name: String): EmbedBuilder {
     return EmbedBuilder().setColor(wikiEmbedColor).setTitle(title + name.replace("+", " ").replace("#", ": "))
-            .setUrl("https://$wikiTarget/wiki/" + name.replace("[+\\s]".toRegex(), "_"))
-            .setThumbnail(wikiIconUrl).setDescription("An error occurred in loading the wiki preview.")
+        .setUrl("https://$wikiTarget/wiki/" + name.replace("[+\\s]".toRegex(), "_"))
+        .setThumbnail(wikiIconUrl).setDescription("An error occurred in loading the wiki preview.")
 }
 
 fun harvestFromWiki(terms: List<String>): List<EmbedBuilder> {
@@ -206,7 +250,7 @@ fun harvestFromWiki(terms: List<String>): List<EmbedBuilder> {
 
     for ((idx, article) in allArticles.withIndex()) {
         val (name, body) = article
-        val titleText = "Search: \"${terms.joinToString(" ")}\" (${idx+1}/$size) \n"
+        val titleText = "Search: \"${terms.joinToString(" ")}\" (${idx + 1}/$size) \n"
         allEmbeds.add(embedFromWiki(titleText, name, body))
     }
 
