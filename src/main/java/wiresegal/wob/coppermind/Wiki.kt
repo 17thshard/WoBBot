@@ -23,6 +23,8 @@ import wiresegal.wob.wikiEmbedColor
 import wiresegal.wob.wikiIconUrl
 import wiresegal.wob.wikiTarget
 import java.io.FileNotFoundException
+import java.util.concurrent.CompletionException
+import java.util.zip.ZipException
 
 /**
  * @author WireSegal
@@ -195,7 +197,19 @@ fun searchCoppermind(message: Message, terms: List<String>) {
 
     message.channel.sendMessage("Searching for \"${terms.joinToString(" ")}\"...").then {
         type = message.channel.typeContinuously()
-        val allEmbeds = harvestFromWiki(terms)
+        var allEmbeds: List<EmbedBuilder>
+
+        try {
+            allEmbeds = harvestFromWiki(terms)
+        } catch (e: ZipException) {
+            val zip_enabled = wiki.isUsingCompressedRequests()
+            wiki.setUsingCompressedRequests(!zip_enabled)
+            allEmbeds = harvestFromWiki(terms)
+        } catch (e: CompletionException) {
+            val zip_enabled = wiki.isUsingCompressedRequests()
+            wiki.setUsingCompressedRequests(!zip_enabled)
+            allEmbeds = harvestFromWiki(terms)
+        }
 
         type.close()
 
