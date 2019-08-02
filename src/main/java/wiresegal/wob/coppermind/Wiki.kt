@@ -23,6 +23,9 @@ import wiresegal.wob.wikiEmbedColor
 import wiresegal.wob.wikiIconUrl
 import wiresegal.wob.wikiTarget
 import java.io.FileNotFoundException
+import java.net.URLConnection
+import java.util.logging.Level
+import java.util.zip.GZIPInputStream
 
 /**
  * @author WireSegal
@@ -38,6 +41,7 @@ fun Remark.convert(node: List<Node>, base: String): String = convertFragment(nod
 fun Remark.convert(node: Node, base: String): String = convertFragment(node.toString(), base)
 
 class Coppermind : Wiki(wikiTarget) {
+    private val cookies = mutableMapOf<String, String>()
 
     fun getSectionHTML(title: String): String {
         return parse(getPageText(title)).replace("API", title.replace("[+_]".toRegex(), " "))
@@ -75,7 +79,70 @@ class Coppermind : Wiki(wikiTarget) {
     }
 
     override fun fetch(url: String, caller: String): String {
-        return super.fetch(url.replace("&intoken=[^&]+".toRegex(), ""), caller)
+        val fetchedUrl = url.replace("&intoken=[^&]+".toRegex(), "")
+
+        this.logurl(fetchedUrl, caller)
+
+        val connection = makeConnection(url)
+        connection.connectTimeout = 30000
+        connection.readTimeout = 180000
+
+        connection.setRequestProperty("Accept-Encoding", "gzip")
+        connection.setRequestProperty("Cookie", cookies.entries.joinToString("; ") { "${it.key}=${it.value}" });
+        connection.setRequestProperty("User-Agent", this.userAgent)
+
+        connection.connect()
+
+        connection.updateCookies()
+
+        // Lag control mimics original
+        val lag = connection.getHeaderFieldInt("X-Database-Lag", -5)
+        if (lag > maxLag) {
+            try {
+                synchronized(this) {
+                    val time = connection.getHeaderFieldInt("Retry-After", 10)
+                    this.log(Level.WARNING, caller, "Current database lag $lag s exceeds $maxLag s, waiting $time s.")
+                    Thread.sleep((time * 1000).toLong())
+                }
+            } catch (exception: InterruptedException) {
+            }
+
+            return this.fetch(url, caller)
+        }
+
+        val gzipped = connection.getHeaderField("Content-Encoding") == "gzip"
+
+        val stream = if (gzipped) GZIPInputStream(connection.getInputStream()) else connection.getInputStream()
+        val response = stream.bufferedReader().use { it.readText() }
+
+        if ("<error code=" in response) {
+            if (assertionMode and ASSERT_BOT == ASSERT_BOT && "error code=\"assertbotfailed\"" in response) {
+                throw AssertionError("Bot privileges missing or revoked, or session expired.")
+            }
+
+            if (assertionMode and ASSERT_USER == ASSERT_USER && "error code=\"assertuserfailed\"" in response) {
+                throw AssertionError("Session expired.")
+            }
+
+            if ("code=\"rvnosuchsection" !in response) {
+                throw UnknownError("MW API error. Server response was: $response")
+            }
+        }
+
+        return response
+    }
+
+    private fun URLConnection.updateCookies() {
+        val cookieHeaders = headerFields["Set-Cookie"] ?: return
+        for (header in cookieHeaders) {
+            val cookie = header.substringBefore(';')
+            val key = cookie.substringBefore('=')
+            val value = cookie.substringAfter('=')
+
+            if (value != "deleted") {
+                cookies[key] = value
+            }
+        }
     }
 }
 
