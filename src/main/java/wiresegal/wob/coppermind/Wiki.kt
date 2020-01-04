@@ -40,7 +40,7 @@ fun Remark.convert(node: Node, base: String): String = convertFragment(node.toSt
 class Coppermind : Wiki(wikiTarget) {
 
     fun getSectionHTML(title: String): String {
-        return parse(getPageText(title)).replace("API", title.replace("[+_]".toRegex(), " "))
+        return parse(getPageText(title.replace("+", "%20"))).replace("API", title.replace("[+_]".toRegex(), " "))
     }
 
     fun getDocument(title: String): Document {
@@ -176,14 +176,20 @@ fun backupEmbed(title: String, name: String): EmbedBuilder {
 
 fun harvestFromWiki(terms: List<String>): List<EmbedBuilder> {
     val (large, rawArticles) = searchResults(terms.joinToString("+"))
-    val allArticles = rawArticles.map { it to fetchPreview(it) }
+    val allArticles = rawArticles.mapNotNull {
+        try {
+            it to fetchPreview(it)
+        } catch (e: FileNotFoundException) {
+            null
+        }
+    }
     val allEmbeds = mutableListOf<EmbedBuilder>()
 
     val size = if (large) "... (10)" else allArticles.size.toString()
 
     for ((idx, article) in allArticles.withIndex()) {
         val (name, body) = article
-        val titleText = "Search: \"${terms.joinToString(" ")}\" (${idx+1}/$size) \n"
+        val titleText = "Search: \"${terms.joinToString(" ")}\" (${idx + 1}/$size) \n"
         allEmbeds.add(embedFromWiki(titleText, name, body))
     }
 
