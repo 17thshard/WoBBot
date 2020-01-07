@@ -70,8 +70,10 @@ fun embedFromContent(titlePrefix: String, entry: Entry): EmbedBuilder {
                 .capWithSuffix(FOOTER_LIMIT, arcanumSuffix))
 
     for ((speaker, comment) in entry.lines.take(FIELDS_LIMIT)
-            .map { it.getTrueSpeaker().run { if (isEmpty()) "Context" else this }.take(FIELD_NAME_LIMIT) to
-                    it.getTrueText().capWithSuffix(FIELD_TEXT_LIMIT, arcanumSuffix) }) {
+            .map {
+                it.getTrueSpeaker().run { if (isEmpty()) "Context" else this }.take(FIELD_NAME_LIMIT) to
+                        it.getTrueText().capWithSuffix(FIELD_TEXT_LIMIT, arcanumSuffix)
+            }) {
         val oldJson = embed.toJsonNode()
         embed.addField(speaker, comment, false)
         val newJson = embed.toJsonNode()
@@ -110,7 +112,7 @@ fun harvestFromSearch(terms: List<String>): List<EmbedBuilder> {
     val size = if (large) "... (250)" else allArticles.size.toString()
 
     for ((idx, article) in allArticles.withIndex()) {
-        val titleText = "Search: \"${terms.joinToString()}\" (${idx+1}/$size) \n"
+        val titleText = "Search: \"${terms.joinToString()}\" (${idx + 1}/$size) \n"
         allEmbeds.add(embedFromContent(titleText, article))
     }
 
@@ -173,17 +175,9 @@ var progressCacheTimeStamp: Long? = null
 
 fun showProgressBar(message: Message) {
     val projects = getProgressBar()
-    var maxLength = 0
-    for (project in projects) {
-        maxLength = Integer.max(maxLength, project.first.length)
-    }
     var progresses = ""
     for (project in projects) {
         val (name, percent) = project
-        // TODO: The whitespace doesn't show up in the message
-//        val wordWhiteSpace = " ".repeat(maxLength - name.length)
-//        val percentWhiteSpace = " ".repeat(Integer.max(0, 3 - percent.length))
-//        progresses += "$name$wordWhiteSpace is at $percentWhiteSpace$percent%\n"
         progresses += "$name is at $percent%\n"
     }
 
@@ -196,27 +190,43 @@ fun showProgressBar(message: Message) {
 }
 
 fun getProgressBar(): MutableList<Pair<String, String>> {
-    if (progressCacheTimeStamp != null && (System.currentTimeMillis() - progressCacheTimeStamp!! <= progressCachePersistence)) {
+    if (progressCacheTimeStamp != null
+            && (System.currentTimeMillis() - progressCacheTimeStamp!! <= progressCachePersistence))
         return progressCache
-    } else {
-        val html = URL(homepageTarget).readText()
-        // This regex matches all <small> tags with class="vc_label", captures text with an optional <a> tag surrounding it, and then captures the numbers of the percentage inside the <span>
-        // I've added whitespace everywhere it can appear, but if Brandon decides to use exoteric characters in the future, this might break.
-        val regex = Regex("<small[\\s]*class=\"vc_label\"[\\s\\w:#;=\"]*>[\\s]*(?:<a[-\\s\\w:#;=\"/,.]*>)?([\\s\\w&.,:]*)(?:</a>)?[\\s]*<span[\\s\\w:#;=\"]*>[\\s]*([0-9]*)%[\\s]*</span>[\\s]*</small>")
 
-        val projects = mutableListOf<Pair<String, String>>()
-        var matchResult = regex.find(html)
-        while (matchResult != null) {
-            val (name, percent) = matchResult.destructured
-            projects.add(Pair(name.trim(), percent))
-            matchResult = matchResult.next()
-        }
+    val html = URL(homepageTarget).readText()
+    // This regex matches all <small> tags with class="vc_label", captures text with an optional <a> tag surrounding it, and then captures the numbers of the percentage inside the <span>
+    // I've added whitespace everywhere it can appear, but if Brandon decides to use exoteric characters in the future, this might break.
+    val parentTag = "small"
+    val parentClass = "vc_label"
+    val ws = """[\s]*"""
+    val descriptor = """[-\s\w:#;="/,.]*"""
+    val text = """[\s\w&.,:]*"""
+    val number = """[0-9]*"""
+    val textLink = "a"
+    val percentageParent = "span"
+    val regex = Regex(
+            "<$parentTag${ws}class=\"$parentClass\"$descriptor>$ws" +
+                    "(?:<$textLink$descriptor>)?" +
+                    "($text)" + // Progress title
+                    "(?:</$textLink>)?$ws" +
+                    "<$percentageParent$descriptor>$ws" +
+                    "($number)$ws%$ws" + // Progress percentage
+                    "</$percentageParent>$ws" +
+                    "</$parentTag>")
 
-        progressCacheTimeStamp = System.currentTimeMillis();
-        progressCache.clear()
-        progressCache.addAll(projects)
-        return projects
+    val projects = mutableListOf<Pair<String, String>>()
+    var match = regex.find(html)
+    while (match != null) {
+        val (name, percent) = match.destructured
+        projects.add(Pair(name.trim(), percent))
+        match = match.next()
     }
+
+    progressCacheTimeStamp = System.currentTimeMillis();
+    progressCache.clear()
+    progressCache.addAll(projects)
+    return projects
 }
 
 fun applyToOwners(toApply: User.() -> Unit) {
