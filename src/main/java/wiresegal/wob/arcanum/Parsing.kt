@@ -16,6 +16,7 @@ import wiresegal.wob.misc.then
 import wiresegal.wob.misc.util.FakeEmbedBuilder
 import wiresegal.wob.plugin.sendError
 import wiresegal.wob.plugin.visibleCommands
+import java.net.URL
 import java.time.Instant
 
 /**
@@ -165,6 +166,57 @@ fun about(message: Message) {
                 "[Github Source](https://github.com/Palanaeum/WoBBot) | " +
                 "[Arcanum]($urlTarget)")
     })
+}
+
+val progressCache = mutableListOf<Pair<String, String>>()
+var progressCacheTimeStamp: Long? = null
+
+fun showProgressBar(message: Message) {
+    val projects = getProgressBar()
+    var maxLength = 0
+    for (project in projects) {
+        maxLength = Integer.max(maxLength, project.first.length)
+    }
+    var progresses = ""
+    for (project in projects) {
+        val (name, percent) = project
+        // TODO: The whitespace doesn't show up in the message
+//        val wordWhiteSpace = " ".repeat(maxLength - name.length)
+//        val percentWhiteSpace = " ".repeat(Integer.max(0, 3 - percent.length))
+//        progresses += "$name$wordWhiteSpace is at $percentWhiteSpace$percent%\n"
+        progresses += "$name is at $percent%\n"
+    }
+
+    message.channel.sendMessage(EmbedBuilder().apply {
+        setTitle("Progress Bars")
+        setColor(embedColor)
+
+        setDescription(progresses)
+    })
+}
+
+fun getProgressBar(): MutableList<Pair<String, String>> {
+    if (progressCacheTimeStamp != null && (System.currentTimeMillis() - progressCacheTimeStamp!! <= progressCachePersistence)) {
+        return progressCache
+    } else {
+        val html = URL(homepageTarget).readText()
+        // This regex matches all <small> tags with class="vc_label", captures text with an optional <a> tag surrounding it, and then captures the numbers of the percentage inside the <span>
+        // I've added whitespace everywhere it can appear, but if Brandon decides to use exoteric characters in the future, this might break.
+        val regex = Regex("<small[\\s]*class=\"vc_label\"[\\s\\w:#;=\"]*>[\\s]*(?:<a[-\\s\\w:#;=\"/,.]*>)?([\\s\\w&.,:]*)(?:</a>)?[\\s]*<span[\\s\\w:#;=\"]*>[\\s]*([0-9]*)%[\\s]*</span>[\\s]*</small>")
+
+        val projects = mutableListOf<Pair<String, String>>()
+        var matchResult = regex.find(html)
+        while (matchResult != null) {
+            val (name, percent) = matchResult.destructured
+            projects.add(Pair(name.trim(), percent))
+            matchResult = matchResult.next()
+        }
+
+        progressCacheTimeStamp = System.currentTimeMillis();
+        progressCache.clear()
+        progressCache.addAll(projects)
+        return projects
+    }
 }
 
 fun applyToOwners(toApply: User.() -> Unit) {
