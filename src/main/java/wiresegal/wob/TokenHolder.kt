@@ -23,7 +23,7 @@ private val gitProperties: Properties by lazy {
 
 val token: String? = System.getenv("DISCORD_TOKEN")
 val arcanumToken: String? = System.getenv("ARCANUM_TOKEN")
-val homepageTarget = System.getenv("BRANDONSANDERSON_URL") ?: "https://brandonsanderson.com/"
+val homepageTarget = System.getenv("BRANDONSANDERSON_URL") ?: "https://www.brandonsanderson.com/"
 val urlTarget = System.getenv("ARCANUM_URL") ?: "https://wob.coppermind.net"
 val wikiTarget = System.getenv("WIKI_URL") ?: "coppermind.net"
 val wikiCommand = System.getenv("WIKI_COMMAND") ?: "coppermind|cm"

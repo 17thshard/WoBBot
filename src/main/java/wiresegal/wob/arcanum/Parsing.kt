@@ -8,6 +8,9 @@ import de.btobastian.javacord.entities.message.embed.EmbedBuilder
 import de.btobastian.javacord.entities.permissions.PermissionState
 import de.btobastian.javacord.entities.permissions.PermissionType
 import de.btobastian.javacord.entities.permissions.PermissionsBuilder
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
+import org.jsoup.select.Elements
 import wiresegal.wob.*
 import wiresegal.wob.misc.catch
 import wiresegal.wob.misc.setupControls
@@ -170,63 +173,76 @@ fun about(message: Message) {
     })
 }
 
-val progressCache = mutableListOf<Pair<String, String>>()
+class Progress(title: String, percentage: String, link: String?) {
+    operator fun component1(): String {
+        return title
+    }
+    operator fun component2(): String {
+        return percentage
+    }
+    operator fun component3(): String? {
+        return link
+    }
+
+    private val title: String = title
+    private val percentage: String = percentage
+    private val link: String? = link
+}
+
+val progressCache = mutableListOf<Progress>()
 var progressCacheTimeStamp: Long? = null
 
 fun showProgressBar(message: Message) {
-    val projects = getProgressBar()
-    var progresses = ""
-    for (project in projects) {
-        val (name, percent) = project
-        progresses += "$name is at $percent%\n"
+    val progresses = extractProgresses()
+    val embed = EmbedBuilder ()
+            .setColor(embedColor)
+            .setTitle("Progress Bars")
+            .setUrl(homepageTarget)
+
+    val full = "█"
+    val empty = "░"
+
+    for (progress in progresses) {
+        val (name, percent, link) = progress
+        val percentNumber: Int = Integer.parseInt(percent)
+        val sensitivity = 20
+        val points: Int = (percentNumber/100.0 * sensitivity).toInt()
+        val bar = full.repeat(points) + empty.repeat(sensitivity - points)
+        val linkText = if(link != null) "_[check it out]($link)_\n" else ""
+        embed.addField("**$name**", "$linkText$bar $percent%", false).setUrl("https://google.com/")
     }
-
-    message.channel.sendMessage(EmbedBuilder().apply {
-        setTitle("Progress Bars")
-        setColor(embedColor)
-
-        setDescription(progresses)
-    })
+    message.channel.sendMessage(embed)
 }
 
-fun getProgressBar(): MutableList<Pair<String, String>> {
+fun extractProgresses(): MutableList<Progress> {
     if (progressCacheTimeStamp != null
             && (System.currentTimeMillis() - progressCacheTimeStamp!! <= progressCachePersistence))
         return progressCache
 
     val html = URL(homepageTarget).readText()
-    // This regex matches all <small> tags with class="vc_label", captures text with an optional <a> tag surrounding it, and then captures the numbers of the percentage inside the <span>
-    // I've added whitespace everywhere it can appear, but if Brandon decides to use exoteric characters in the future, this might break.
-    val parentTag = "small"
     val parentClass = "vc_label"
-    val ws = """[\s]*"""
-    val descriptor = """[-\s\w:#;="/,.]*"""
-    val text = """[\s\w&.,:]*"""
-    val number = """[0-9]*"""
-    val textLink = "a"
-    val percentageParent = "span"
-    val regex = Regex(
-            "<$parentTag${ws}class=\"$parentClass\"$descriptor>$ws" +
-                    "(?:<$textLink$descriptor>)?" +
-                    "($text)" + // Progress title
-                    "(?:</$textLink>)?$ws" +
-                    "<$percentageParent$descriptor>$ws" +
-                    "($number)$ws%$ws" + // Progress percentage
-                    "</$percentageParent>$ws" +
-                    "</$parentTag>")
 
-    val projects = mutableListOf<Pair<String, String>>()
-    var match = regex.find(html)
-    while (match != null) {
-        val (name, percent) = match.destructured
-        projects.add(Pair(name.trim(), percent))
-        match = match.next()
+    progressCache.clear()
+
+    val s: Document? = Jsoup.parse(html);
+    val content: Elements? = s?.getElementsByClass(parentClass)
+    for (elem in content!!) {
+        val percentage = elem.getElementsByTag("span").html()
+        elem.getElementsByTag("span").remove()
+        var title = elem.html()
+
+        val linkTag: Elements = elem.getElementsByTag("a")
+        var link: String? = null
+        if(linkTag.size > 0) {
+            title = linkTag[0].html()
+            link = linkTag[0].attr("href")
+        }
+        title = title.replace("&amp;", "&") // Would be nice if escape sequences like this could be avoided entirely
+        progressCache.add(Progress(title.trim(), percentage.substring(0, percentage.length-1), link))
     }
 
     progressCacheTimeStamp = System.currentTimeMillis();
-    progressCache.clear()
-    progressCache.addAll(projects)
-    return projects
+    return progressCache
 }
 
 fun applyToOwners(toApply: User.() -> Unit) {
