@@ -193,13 +193,13 @@ fun showProgressBar(message: Message) {
     var progressInformation = ""
     for ((name, percent, link) in progresses) {
         val percentNumber = Integer.parseInt(percent)
-        val points: Int = (percentNumber/100.0 * sensitivity).toInt()
+        val points = (percentNumber/100.0 * sensitivity).toInt()
         val bar = full.repeat(points) + empty.repeat(sensitivity - points)
         val title = if(link != null) "[$name]($link)" else name
         progressInformation += "**$title**\n$bar   $percent%\n\n"
     }
     embed.setDescription(progressInformation)
-    
+
     message.channel.sendMessage(embed)
 }
 
