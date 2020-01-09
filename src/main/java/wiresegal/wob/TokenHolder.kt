@@ -33,7 +33,7 @@ val wikiIconUrl = System.getenv("WIKI_ICON") ?: "https://cdn.discordapp.com/emoj
 val embedColor = Color((System.getenv("ARCANUM_COLOR") ?: "003A52").toInt(16))
 val wikiEmbedColor = Color((System.getenv("WIKI_COLOR") ?: "CB6D51").toInt(16))
 
-const val progressCachePersistence: Long = 10 * 60 * 1000 // 10 minutes persistence for the cache
+const val progressCachePersistence = 10L * 60 * 1000 // 10 minutes persistence for the cache
 
 fun propertyGetter(name: String) = lazy<String?> {
     val property = gitProperties.getProperty(name)

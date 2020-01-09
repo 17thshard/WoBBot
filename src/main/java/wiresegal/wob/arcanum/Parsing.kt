@@ -10,6 +10,7 @@ import de.btobastian.javacord.entities.permissions.PermissionType
 import de.btobastian.javacord.entities.permissions.PermissionsBuilder
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
+import org.jsoup.nodes.Entities
 import org.jsoup.select.Elements
 import wiresegal.wob.*
 import wiresegal.wob.misc.catch
@@ -173,21 +174,7 @@ fun about(message: Message) {
     })
 }
 
-class Progress(title: String, percentage: String, link: String?) {
-    operator fun component1(): String {
-        return title
-    }
-    operator fun component2(): String {
-        return percentage
-    }
-    operator fun component3(): String? {
-        return link
-    }
-
-    private val title: String = title
-    private val percentage: String = percentage
-    private val link: String? = link
-}
+data class Progress(val title: String, val percentage: String, val link: String?)
 
 val progressCache = mutableListOf<Progress>()
 var progressCacheTimeStamp: Long? = null
@@ -201,16 +188,18 @@ fun showProgressBar(message: Message) {
 
     val full = "█"
     val empty = "░"
+    val sensitivity = 20
 
-    for (progress in progresses) {
-        val (name, percent, link) = progress
-        val percentNumber: Int = Integer.parseInt(percent)
-        val sensitivity = 20
+    var progressInformation = ""
+    for ((name, percent, link) in progresses) {
+        val percentNumber = Integer.parseInt(percent)
         val points: Int = (percentNumber/100.0 * sensitivity).toInt()
         val bar = full.repeat(points) + empty.repeat(sensitivity - points)
-        val linkText = if(link != null) "_[check it out]($link)_\n" else ""
-        embed.addField("**$name**", "$linkText$bar $percent%", false).setUrl("https://google.com/")
+        val title = if(link != null) "[$name]($link)" else name
+        progressInformation += "**$title**\n$bar   $percent%\n\n"
     }
+    embed.setDescription(progressInformation)
+    
     message.channel.sendMessage(embed)
 }
 
@@ -220,25 +209,19 @@ fun extractProgresses(): MutableList<Progress> {
         return progressCache
 
     val html = URL(homepageTarget).readText()
-    val parentClass = "vc_label"
+    val elementClass = "vc_label"
 
     progressCache.clear()
 
-    val s: Document? = Jsoup.parse(html);
-    val content: Elements? = s?.getElementsByClass(parentClass)
-    for (elem in content!!) {
-        val percentage = elem.getElementsByTag("span").html()
+    val doc = Jsoup.parse(html);
+    val content = doc.getElementsByClass(elementClass)
+    for (elem in content) {
+        val percentage = elem.getElementsByTag("span").text()
         elem.getElementsByTag("span").remove()
-        var title = elem.html()
+        val title = elem.text()
+        val link = elem.getElementsByTag("a").firstOrNull()?.attr("href")
 
-        val linkTag: Elements = elem.getElementsByTag("a")
-        var link: String? = null
-        if(linkTag.size > 0) {
-            title = linkTag[0].html()
-            link = linkTag[0].attr("href")
-        }
-        title = title.replace("&amp;", "&") // Would be nice if escape sequences like this could be avoided entirely
-        progressCache.add(Progress(title.trim(), percentage.substring(0, percentage.length-1), link))
+        progressCache.add(Progress(Entities.unescape(title).trim(), percentage.trim().substring(0, percentage.length-1), link))
     }
 
     progressCacheTimeStamp = System.currentTimeMillis();
