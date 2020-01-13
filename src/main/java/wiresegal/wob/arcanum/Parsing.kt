@@ -196,14 +196,14 @@ fun showProgressBar(message: Message) {
         val points = (percentNumber/100.0 * sensitivity).toInt()
         val bar = full.repeat(points) + empty.repeat(sensitivity - points)
         val title = if(link != null) "[$name]($link)" else name
-        progressInformation += "**$title**\n$bar   $percent%\n\n"
+        progressInformation += "**$title**\n$bar $percent%\n\n"
     }
     embed.setDescription(progressInformation)
 
     message.channel.sendMessage(embed)
 }
 
-fun extractProgresses(): MutableList<Progress> {
+fun extractProgresses(): List<Progress> {
     if (progressCacheTimeStamp != null
             && (System.currentTimeMillis() - progressCacheTimeStamp!! <= progressCachePersistence))
         return progressCache
