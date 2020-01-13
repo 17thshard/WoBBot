@@ -20,7 +20,6 @@ import wiresegal.wob.misc.then
 import wiresegal.wob.misc.util.FakeEmbedBuilder
 import wiresegal.wob.plugin.sendError
 import wiresegal.wob.plugin.visibleCommands
-import java.net.URL
 import java.time.Instant
 
 /**
@@ -208,12 +207,11 @@ fun extractProgresses(): List<Progress> {
             && (System.currentTimeMillis() - progressCacheTimeStamp!! <= progressCachePersistence))
         return progressCache
 
-    val html = URL(homepageTarget).readText()
     val elementClass = "vc_label"
 
     progressCache.clear()
 
-    val doc = Jsoup.parse(html);
+    val doc = Jsoup.connect(homepageTarget).get()
     val content = doc.getElementsByClass(elementClass)
     for (elem in content) {
         val percentage = elem.getElementsByTag("span").text()
