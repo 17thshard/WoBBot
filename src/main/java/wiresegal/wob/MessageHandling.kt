@@ -214,6 +214,10 @@ fun registerBuiltinHandlers() {
         about(message)
     }
 
+    addCommand("${wobCommand}progress") { _, _, _, message ->
+        showProgressBar(message)
+    }
+
     addCommand("${wobCommand}random") { _, _, _, message ->
         message.channel.sendMessage(embedFromContent("", randomEntry())).setupDeletable(message.author)
     }

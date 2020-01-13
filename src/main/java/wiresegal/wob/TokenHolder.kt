@@ -23,6 +23,7 @@ private val gitProperties: Properties by lazy {
 
 val token: String? = System.getenv("DISCORD_TOKEN")
 val arcanumToken: String? = System.getenv("ARCANUM_TOKEN")
+val homepageTarget = System.getenv("BRANDONSANDERSON_URL") ?: "https://www.brandonsanderson.com/"
 val urlTarget = System.getenv("ARCANUM_URL") ?: "https://wob.coppermind.net"
 val wikiTarget = System.getenv("WIKI_URL") ?: "coppermind.net"
 val wikiCommand = System.getenv("WIKI_COMMAND") ?: "coppermind|cm"
@@ -31,6 +32,8 @@ val iconUrl = System.getenv("ARCANUM_ICON") ?: "https://cdn.discordapp.com/emoji
 val wikiIconUrl = System.getenv("WIKI_ICON") ?: "https://cdn.discordapp.com/emojis/432391749550342145.png?v=1"
 val embedColor = Color((System.getenv("ARCANUM_COLOR") ?: "003A52").toInt(16))
 val wikiEmbedColor = Color((System.getenv("WIKI_COLOR") ?: "CB6D51").toInt(16))
+
+const val progressCachePersistence = 10L * 60 * 1000 // 10 minutes persistence for the cache
 
 fun propertyGetter(name: String) = lazy<String?> {
     val property = gitProperties.getProperty(name)

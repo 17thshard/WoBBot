@@ -8,6 +8,10 @@ import de.btobastian.javacord.entities.message.embed.EmbedBuilder
 import de.btobastian.javacord.entities.permissions.PermissionState
 import de.btobastian.javacord.entities.permissions.PermissionType
 import de.btobastian.javacord.entities.permissions.PermissionsBuilder
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Entities
+import org.jsoup.select.Elements
 import wiresegal.wob.*
 import wiresegal.wob.misc.catch
 import wiresegal.wob.misc.setupControls
@@ -16,6 +20,7 @@ import wiresegal.wob.misc.then
 import wiresegal.wob.misc.util.FakeEmbedBuilder
 import wiresegal.wob.plugin.sendError
 import wiresegal.wob.plugin.visibleCommands
+import java.net.URL
 import java.time.Instant
 
 /**
@@ -69,8 +74,10 @@ fun embedFromContent(titlePrefix: String, entry: Entry): EmbedBuilder {
                 .capWithSuffix(FOOTER_LIMIT, arcanumSuffix))
 
     for ((speaker, comment) in entry.lines.take(FIELDS_LIMIT)
-            .map { it.getTrueSpeaker().run { if (isEmpty()) "Context" else this }.take(FIELD_NAME_LIMIT) to
-                    it.getTrueText().capWithSuffix(FIELD_TEXT_LIMIT, arcanumSuffix) }) {
+            .map {
+                it.getTrueSpeaker().run { if (isEmpty()) "Context" else this }.take(FIELD_NAME_LIMIT) to
+                        it.getTrueText().capWithSuffix(FIELD_TEXT_LIMIT, arcanumSuffix)
+            }) {
         val oldJson = embed.toJsonNode()
         embed.addField(speaker, comment, false)
         val newJson = embed.toJsonNode()
@@ -109,7 +116,7 @@ fun harvestFromSearch(terms: List<String>): List<EmbedBuilder> {
     val size = if (large) "... (250)" else allArticles.size.toString()
 
     for ((idx, article) in allArticles.withIndex()) {
-        val titleText = "Search: \"${terms.joinToString()}\" (${idx+1}/$size) \n"
+        val titleText = "Search: \"${terms.joinToString()}\" (${idx + 1}/$size) \n"
         allEmbeds.add(embedFromContent(titleText, article))
     }
 
@@ -165,6 +172,60 @@ fun about(message: Message) {
                 "[Github Source](https://github.com/Palanaeum/WoBBot) | " +
                 "[Arcanum]($urlTarget)")
     })
+}
+
+data class Progress(val title: String, val percentage: String, val link: String?)
+
+val progressCache = mutableListOf<Progress>()
+var progressCacheTimeStamp: Long? = null
+
+fun showProgressBar(message: Message) {
+    val progresses = extractProgresses()
+    val embed = EmbedBuilder ()
+            .setColor(embedColor)
+            .setTitle("Progress Bars")
+            .setUrl(homepageTarget)
+
+    val full = "█"
+    val empty = "░"
+    val sensitivity = 20
+
+    var progressInformation = ""
+    for ((name, percent, link) in progresses) {
+        val percentNumber = Integer.parseInt(percent)
+        val points = (percentNumber/100.0 * sensitivity).toInt()
+        val bar = full.repeat(points) + empty.repeat(sensitivity - points)
+        val title = if(link != null) "[$name]($link)" else name
+        progressInformation += "**$title**\n$bar $percent%\n\n"
+    }
+    embed.setDescription(progressInformation)
+
+    message.channel.sendMessage(embed)
+}
+
+fun extractProgresses(): List<Progress> {
+    if (progressCacheTimeStamp != null
+            && (System.currentTimeMillis() - progressCacheTimeStamp!! <= progressCachePersistence))
+        return progressCache
+
+    val html = URL(homepageTarget).readText()
+    val elementClass = "vc_label"
+
+    progressCache.clear()
+
+    val doc = Jsoup.parse(html);
+    val content = doc.getElementsByClass(elementClass)
+    for (elem in content) {
+        val percentage = elem.getElementsByTag("span").text()
+        elem.getElementsByTag("span").remove()
+        val title = elem.text()
+        val link = elem.getElementsByTag("a").firstOrNull()?.attr("href")
+
+        progressCache.add(Progress(Entities.unescape(title).trim(), percentage.trim().substring(0, percentage.length-1), link))
+    }
+
+    progressCacheTimeStamp = System.currentTimeMillis();
+    return progressCache
 }
 
 fun applyToOwners(toApply: User.() -> Unit) {
