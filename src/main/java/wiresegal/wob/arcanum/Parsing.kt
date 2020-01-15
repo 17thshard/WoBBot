@@ -9,9 +9,7 @@ import de.btobastian.javacord.entities.permissions.PermissionState
 import de.btobastian.javacord.entities.permissions.PermissionType
 import de.btobastian.javacord.entities.permissions.PermissionsBuilder
 import org.jsoup.Jsoup
-import org.jsoup.nodes.Document
 import org.jsoup.nodes.Entities
-import org.jsoup.select.Elements
 import wiresegal.wob.*
 import wiresegal.wob.misc.catch
 import wiresegal.wob.misc.setupControls
@@ -208,12 +206,11 @@ fun extractProgresses(): List<Progress> {
             && (System.currentTimeMillis() - progressCacheTimeStamp!! <= progressCachePersistence))
         return progressCache
 
-    val html = URL(homepageTarget).readText()
     val elementClass = "vc_label"
 
     progressCache.clear()
 
-    val doc = Jsoup.parse(html);
+    val doc = Jsoup.connect(homepageTarget).get();
     val content = doc.getElementsByClass(elementClass)
     for (elem in content) {
         val percentage = elem.getElementsByTag("span").text()
