@@ -9,9 +9,7 @@ import de.btobastian.javacord.entities.permissions.PermissionState
 import de.btobastian.javacord.entities.permissions.PermissionType
 import de.btobastian.javacord.entities.permissions.PermissionsBuilder
 import org.jsoup.Jsoup
-import org.jsoup.nodes.Document
 import org.jsoup.nodes.Entities
-import org.jsoup.select.Elements
 import wiresegal.wob.*
 import wiresegal.wob.misc.catch
 import wiresegal.wob.misc.setupControls
