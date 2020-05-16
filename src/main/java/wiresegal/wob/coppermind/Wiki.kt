@@ -18,13 +18,16 @@ import wiresegal.wob.misc.catch
 import wiresegal.wob.misc.setupControls
 import wiresegal.wob.misc.setupDeletable
 import wiresegal.wob.misc.then
+import wiresegal.wob.misc.util.async
 import wiresegal.wob.plugin.sendError
 import wiresegal.wob.wikiEmbedColor
 import wiresegal.wob.wikiIconUrl
 import wiresegal.wob.wikiTarget
 import java.io.FileNotFoundException
 import java.net.URLConnection
+import java.net.URLEncoder
 import java.util.logging.Level
+import java.util.stream.Collectors
 import java.util.zip.GZIPInputStream
 
 /**
@@ -49,6 +52,21 @@ class Coppermind : Wiki(wikiTarget) {
 
     fun getDocument(title: String): Document {
         return Jsoup.parse(getSectionHTML(title), "https://$wikiTarget")
+    }
+
+    override fun getPageText(title: String?): String {
+        return if (namespace(title) < 0) {
+            throw UnsupportedOperationException("Cannot retrieve Special: or Media: pages!")
+        } else {
+            val url = base + URLEncoder.encode(this.normalize(title), "UTF-8").replace('+', '_') + "&action=raw"
+            val temp = fetch(url, "getPageText")
+            log(Level.INFO, "getPageText", "Successfully retrieved text of $title")
+            temp
+        }
+    }
+
+    override fun constructTitleString(titles: Array<out String>?): Array<String> {
+        return super.constructTitleString(titles).map { it.replace('+', '_') }.toTypedArray()
     }
 
     fun resolveFragmentRedirect(title: String) = resolveFragmentRedirect(arrayOf(title))[0]
@@ -186,8 +204,10 @@ fun fetchPreview(searchInfo: String): Pair<List<String>, String> {
 
 fun searchResults(searchInfo: String): Pair<Boolean, List<String>> {
     val rawName = searchInfo.replace("[+\\s]".toRegex(), "_")
-    return if (wiki.getPageInfo(rawName)["exists"] as Boolean)
-        false to listOf(wiki.resolveFragmentRedirect(rawName) ?: rawName)
+    val pageInfo = wiki.getPageInfo(rawName)
+
+    return if (pageInfo["exists"] as Boolean)
+        false to listOf(wiki.resolveFragmentRedirect(rawName) ?: (pageInfo["displaytitle"] as String))
     else {
         val search = searchInfo.split("\\s+".toRegex())
         val allArticles = wiki.search(searchInfo)
@@ -263,6 +283,41 @@ fun harvestFromWiki(terms: List<String>): List<EmbedBuilder> {
     return allEmbeds
 }
 
+fun retrieveCoppermindPages(message: Message, pages: List<String>) {
+    var type = AutoCloseable {}
+
+    message.channel.sendMessage("Retrieving articles...").then {
+        type = message.channel.typeContinuously()
+
+        val allEmbeds = pages.parallelStream().map { rawName ->
+            val pageInfo = wiki.getPageInfo(rawName)
+            if (!(pageInfo["exists"] as Boolean)) {
+                return@map rawName to null
+            }
+
+            val pageName = wiki.resolveFragmentRedirect(rawName) ?: (pageInfo["displaytitle"] as String)
+            val preview = fetchPreview(pageName)
+            pageName to embedFromWiki("", pageName, preview)
+        }.collect(Collectors.toList())
+
+        type.close()
+
+        allEmbeds.forEach { (name, embed) ->
+            if (embed == null) {
+                message.channel.sendMessage("Couldn't find the article \"$name\".")
+            } else {
+                message.channel.sendMessage(embed).setupDeletable(message.author)
+            }
+        }
+
+        if (it.channel !is PrivateChannel)
+            it.delete()
+    }.catch {
+        type.close()
+        message.sendError("An error occurred trying to look up the articles.", it)
+    }
+}
+
 fun searchCoppermind(message: Message, terms: List<String>) {
     var type = AutoCloseable {}
 
@@ -292,6 +347,4 @@ fun searchCoppermind(message: Message, terms: List<String>) {
         type.close()
         message.sendError("An error occurred trying to look up the article.", it)
     }
-
-
 }

@@ -5,20 +5,30 @@ import de.btobastian.javacord.entities.message.Message
 import de.btobastian.javacord.entities.message.embed.EmbedBuilder
 import de.btobastian.javacord.events.message.MessageCreateEvent
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner
-import wiresegal.wob.arcanum.*
-import wiresegal.wob.coppermind.embedFromWiki
-import wiresegal.wob.coppermind.fetchPreview
+import wiresegal.wob.arcanum.about
+import wiresegal.wob.arcanum.embedFromContent
+import wiresegal.wob.arcanum.entryFromId
+import wiresegal.wob.arcanum.randomEntry
+import wiresegal.wob.arcanum.searchWoB
+import wiresegal.wob.arcanum.showProgressBar
+import wiresegal.wob.coppermind.retrieveCoppermindPages
 import wiresegal.wob.coppermind.searchCoppermind
-import wiresegal.wob.coppermind.wiki
 import wiresegal.wob.misc.emotions.EMOTIONS
 import wiresegal.wob.misc.emotions.sendEmotion
 import wiresegal.wob.misc.setupDeletable
 import wiresegal.wob.misc.util.BotRanks
 import wiresegal.wob.misc.util.async
 import wiresegal.wob.misc.util.checkPermissions
-import wiresegal.wob.plugin.*
+import wiresegal.wob.plugin.RegisterHandlers
+import wiresegal.wob.plugin.addAdminCommand
+import wiresegal.wob.plugin.addCommand
+import wiresegal.wob.plugin.addExactCalloutHandler
+import wiresegal.wob.plugin.addHiddenCalloutHandler
+import wiresegal.wob.plugin.addMultiCalloutHandler
+import wiresegal.wob.plugin.addSoftHiddenCommand
+import wiresegal.wob.plugin.textHandlers
 import java.lang.reflect.Modifier
-import java.util.*
+import java.util.Locale
 import kotlin.reflect.jvm.internal.components.ReflectKotlinClass
 import kotlin.reflect.jvm.internal.impl.load.kotlin.header.KotlinClassHeader
 
@@ -88,7 +98,7 @@ fun handleContent(message: Message, line: String) {
     async {
         for (handler in textHandlers)
             if (handler.matches(content, trimmed, noChrTrimmed, message)) {
-                handler.handle(content, trimmed, noChrTrimmed, message)
+                handler.handle(if (handler.caseSensitive) line.trim() else content, trimmed, noChrTrimmed, message)
                 break
             }
     }
@@ -121,19 +131,14 @@ fun registerBuiltinHandlers() {
 
     if (wikiCommand.length > 1) {
         val wikiCommands = wikiCommand.split("|")
-        addCommand(wikiCommands[0], wikiCommands.drop(1)) { content, trimmed, _, message ->
+        addCommand(wikiCommands[0], wikiCommands.drop(1), caseSensitive = true) { content, trimmed, _, message ->
             if (wikiCommands.any { trimmed == "!$it" })
                 message.channel.sendMessage("Use `$trimmed \"term\"` to search.")
             else {
-                val allPages = "coppermind.net/wiki/([a-z0-9._/~%\\-+&#?!=()@])*".toRegex().findAll(content)
+                val allPages = "coppermind\\.net/wiki/([A-Za-z0-9._/~%\\-+&#?!=()@]+)".toRegex(RegexOption.IGNORE_CASE).findAll(content)
 
-                for (page in allPages) async {
-                    val rawName = page.groupValues[1]
-                    if (wiki.getPageInfo(rawName)["exists"] as Boolean) {
-                        val pageName = wiki.resolveFragmentRedirect(rawName) ?: rawName
-                        val preview = fetchPreview(pageName)
-                        message.channel.sendMessage(embedFromWiki("", pageName, preview)).setupDeletable(message.author)
-                    }
+                if (allPages.any()) {
+                    retrieveCoppermindPages(message, allPages.map { it.groupValues[1] }.toList())
                 }
 
                 val terms = "[\"“]([/\\w\\s,]+)[\"”]".toRegex().findAll(content).toList()
