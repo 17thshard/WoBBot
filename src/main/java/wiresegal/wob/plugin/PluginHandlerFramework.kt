@@ -1,6 +1,6 @@
 package wiresegal.wob.plugin
 
-import de.btobastian.javacord.entities.message.Message
+import org.javacord.api.entity.message.Message
 import wiresegal.wob.misc.util.BotRanks
 import wiresegal.wob.misc.util.checkPermissions
 

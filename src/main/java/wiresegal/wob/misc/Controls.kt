@@ -1,14 +1,15 @@
 package wiresegal.wob.misc
 
-import de.btobastian.javacord.entities.DiscordEntity
-import de.btobastian.javacord.entities.message.Message
-import de.btobastian.javacord.entities.message.embed.EmbedBuilder
-import de.btobastian.javacord.events.message.reaction.ReactionAddEvent
+import org.javacord.api.entity.DiscordEntity
+import org.javacord.api.entity.message.Message
+import org.javacord.api.entity.message.embed.EmbedBuilder
+import org.javacord.api.event.message.reaction.ReactionAddEvent
 import wiresegal.wob.EmbeddedInfo
 import wiresegal.wob.messageToAuthor
 import wiresegal.wob.messagesWithEmbedLists
 import wiresegal.wob.misc.util.BotRanks
 import wiresegal.wob.misc.util.checkPermissions
+import wiresegal.wob.misc.util.toJsonNode
 import java.util.concurrent.CompletableFuture
 
 /**

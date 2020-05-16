@@ -1,14 +1,14 @@
 package wiresegal.wob.plugin
 
-import de.btobastian.javacord.entities.DiscordEntity
-import de.btobastian.javacord.entities.Mentionable
-import de.btobastian.javacord.entities.User
-import de.btobastian.javacord.entities.channels.GroupChannel
-import de.btobastian.javacord.entities.channels.PrivateChannel
-import de.btobastian.javacord.entities.channels.TextChannel
-import de.btobastian.javacord.entities.message.Message
-import de.btobastian.javacord.entities.message.Messageable
-import de.btobastian.javacord.entities.message.embed.EmbedBuilder
+import org.javacord.api.entity.DiscordEntity
+import org.javacord.api.entity.Mentionable
+import org.javacord.api.entity.user.User
+import org.javacord.api.entity.channel.GroupChannel
+import org.javacord.api.entity.channel.PrivateChannel
+import org.javacord.api.entity.channel.TextChannel
+import org.javacord.api.entity.message.Message
+import org.javacord.api.entity.message.Messageable
+import org.javacord.api.entity.message.embed.EmbedBuilder
 import wiresegal.wob.*
 import wiresegal.wob.arcanum.DESCRIPTION_LIMIT
 import wiresegal.wob.arcanum.notifyOwners

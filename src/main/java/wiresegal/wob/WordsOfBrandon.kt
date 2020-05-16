@@ -1,9 +1,9 @@
 package wiresegal.wob
 
-import de.btobastian.javacord.DiscordApi
-import de.btobastian.javacord.DiscordApiBuilder
-import de.btobastian.javacord.entities.message.embed.EmbedBuilder
-import de.btobastian.javacord.utils.logging.LoggerUtil
+import org.javacord.api.DiscordApi
+import org.javacord.api.DiscordApiBuilder
+import org.javacord.api.entity.message.embed.EmbedBuilder
+import org.javacord.core.util.logging.LoggerUtil
 import wiresegal.wob.arcanum.notifyOwners
 import wiresegal.wob.misc.actOnReaction
 import wiresegal.wob.misc.finalizeMessage

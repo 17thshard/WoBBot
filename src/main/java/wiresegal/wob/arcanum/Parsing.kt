@@ -1,13 +1,13 @@
 package wiresegal.wob.arcanum
 
-import de.btobastian.javacord.entities.User
-import de.btobastian.javacord.entities.channels.PrivateChannel
-import de.btobastian.javacord.entities.message.Message
-import de.btobastian.javacord.entities.message.Messageable
-import de.btobastian.javacord.entities.message.embed.EmbedBuilder
-import de.btobastian.javacord.entities.permissions.PermissionState
-import de.btobastian.javacord.entities.permissions.PermissionType
-import de.btobastian.javacord.entities.permissions.PermissionsBuilder
+import org.javacord.api.entity.user.User
+import org.javacord.api.entity.channel.PrivateChannel
+import org.javacord.api.entity.message.Message
+import org.javacord.api.entity.message.Messageable
+import org.javacord.api.entity.message.embed.EmbedBuilder
+import org.javacord.api.entity.permission.PermissionState
+import org.javacord.api.entity.permission.PermissionType
+import org.javacord.api.entity.permission.PermissionsBuilder
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Entities
 import wiresegal.wob.*
@@ -16,6 +16,7 @@ import wiresegal.wob.misc.setupControls
 import wiresegal.wob.misc.setupDeletable
 import wiresegal.wob.misc.then
 import wiresegal.wob.misc.util.FakeEmbedBuilder
+import wiresegal.wob.misc.util.toJsonNode
 import wiresegal.wob.plugin.sendError
 import wiresegal.wob.plugin.visibleCommands
 import java.time.Instant
@@ -152,9 +153,9 @@ fun about(message: Message) {
     val invite = api.createBotInvite(PermissionsBuilder().setState(PermissionType.MANAGE_MESSAGES, PermissionState.ALLOWED).build())
     val wireID = 77084495118868480L
     val wire = api.getUserById(wireID)
-    val wireStr = if (wire.isPresent) wire.get().mentionTag else "@wiresegal#1522"
+    val wireStr = runCatching { wire.get().mentionTag }.getOrNull() ?: "@wiresegal#1522"
     val host = api.owner
-    val hostStr = if (host.isPresent) host.get().mentionTag else wireStr
+    val hostStr = runCatching { host.get().mentionTag }.getOrNull() ?: wireStr
 
     val add = if (hostStr != wireStr) "\nHosted by: $hostStr" else ""
 
@@ -228,10 +229,10 @@ fun applyToOwners(toApply: User.() -> Unit) {
     val wireID = 77084495118868480L
     val wire = api.getUserById(wireID)
 
-    if (wobCommand == "wob" && wire.isPresent)
-        wire.get().toApply()
-    if (api.owner.isPresent && (api.ownerId != wireID || wobCommand != "wob"))
-        api.owner.get().toApply()
+    if (wobCommand == "wob")
+        runCatching { wire.get() }.onSuccess(toApply)
+    if (api.ownerId != wireID || wobCommand != "wob")
+        runCatching { api.owner.get() }.onSuccess(toApply)
 }
 
 fun notifyOwners(launch: Instant) = notifyOwners {

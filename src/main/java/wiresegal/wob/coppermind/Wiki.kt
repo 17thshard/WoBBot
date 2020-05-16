@@ -3,9 +3,9 @@ package wiresegal.wob.coppermind
 import com.overzealous.remark.Options
 import com.overzealous.remark.Remark
 import com.overzealous.remark.convert.InlineStyle
-import de.btobastian.javacord.entities.channels.PrivateChannel
-import de.btobastian.javacord.entities.message.Message
-import de.btobastian.javacord.entities.message.embed.EmbedBuilder
+import org.javacord.api.entity.channel.PrivateChannel
+import org.javacord.api.entity.message.Message
+import org.javacord.api.entity.message.embed.EmbedBuilder
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -18,7 +18,7 @@ import wiresegal.wob.misc.catch
 import wiresegal.wob.misc.setupControls
 import wiresegal.wob.misc.setupDeletable
 import wiresegal.wob.misc.then
-import wiresegal.wob.misc.util.async
+import wiresegal.wob.misc.util.toJsonNode
 import wiresegal.wob.plugin.sendError
 import wiresegal.wob.wikiEmbedColor
 import wiresegal.wob.wikiIconUrl
@@ -106,7 +106,7 @@ class Coppermind : Wiki(wikiTarget) {
         connection.readTimeout = 180000
 
         connection.setRequestProperty("Accept-Encoding", "gzip")
-        connection.setRequestProperty("Cookie", cookies.entries.joinToString("; ") { "${it.key}=${it.value}" });
+        connection.setRequestProperty("Cookie", cookies.entries.joinToString("; ") { "${it.key}=${it.value}" })
         connection.setRequestProperty("User-Agent", this.userAgent)
 
         connection.connect()
