@@ -1,7 +1,7 @@
 package wiresegal.wob.misc.emotions
 
-import de.btobastian.javacord.entities.channels.TextChannel
-import de.btobastian.javacord.entities.message.Message
+import org.javacord.api.entity.channel.TextChannel
+import org.javacord.api.entity.message.Message
 import java.io.InputStream
 import java.net.URL
 import java.nio.file.FileSystems

@@ -1,7 +1,9 @@
 package wiresegal.wob.misc.util
 
 import com.fasterxml.jackson.databind.node.ObjectNode
-import de.btobastian.javacord.entities.message.embed.EmbedBuilder
+import org.javacord.api.entity.message.embed.EmbedBuilder
+import org.javacord.api.entity.message.embed.internal.EmbedBuilderDelegate
+import org.javacord.core.entity.message.embed.EmbedBuilderDelegateImpl
 import java.io.File
 
 /**
@@ -14,8 +16,14 @@ fun fileInHome(name: String): File {
 }
 
 class FakeEmbedBuilder(val json: ObjectNode) : EmbedBuilder() {
-    override fun toJsonNode(node: ObjectNode): ObjectNode {
-        return node.setAll(json) as ObjectNode
+    private val delegate = object : EmbedBuilderDelegateImpl() {
+        override fun toJsonNode(node: ObjectNode): ObjectNode {
+            return node.setAll(json) as ObjectNode
+        }
+    }
+
+    override fun getDelegate(): EmbedBuilderDelegate {
+        return delegate
     }
 }
 

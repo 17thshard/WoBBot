@@ -1,9 +1,9 @@
 package wiresegal.wob
 
-import de.btobastian.javacord.entities.channels.PrivateChannel
-import de.btobastian.javacord.entities.message.Message
-import de.btobastian.javacord.entities.message.embed.EmbedBuilder
-import de.btobastian.javacord.events.message.MessageCreateEvent
+import org.javacord.api.entity.channel.PrivateChannel
+import org.javacord.api.entity.message.Message
+import org.javacord.api.entity.message.embed.EmbedBuilder
+import org.javacord.api.event.message.MessageCreateEvent
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner
 import wiresegal.wob.arcanum.about
 import wiresegal.wob.arcanum.embedFromContent
@@ -29,7 +29,7 @@ import wiresegal.wob.plugin.addSoftHiddenCommand
 import wiresegal.wob.plugin.textHandlers
 import java.lang.reflect.Modifier
 import java.util.Locale
-import kotlin.reflect.jvm.internal.components.ReflectKotlinClass
+import kotlin.reflect.jvm.internal.impl.descriptors.runtime.components.ReflectKotlinClass
 import kotlin.reflect.jvm.internal.impl.load.kotlin.header.KotlinClassHeader
 
 /**
@@ -38,7 +38,7 @@ import kotlin.reflect.jvm.internal.impl.load.kotlin.header.KotlinClassHeader
  */
 
 fun isKotlinObjectOrFile(clazz: Class<*>): Boolean {
-    val type = ReflectKotlinClass.create(clazz)?.classHeader?.kind
+    val type = (ReflectKotlinClass.Factory as ReflectKotlinClass.Factory).create(clazz)?.classHeader?.kind
     if (type == KotlinClassHeader.Kind.FILE_FACADE || type == KotlinClassHeader.Kind.MULTIFILE_CLASS || type == KotlinClassHeader.Kind.MULTIFILE_CLASS_PART)
         return true
 
@@ -46,7 +46,7 @@ fun isKotlinObjectOrFile(clazz: Class<*>): Boolean {
 }
 
 fun getKotlinObjectOrNull(clazz: Class<*>): Any? {
-    val type = ReflectKotlinClass.create(clazz)?.classHeader?.kind
+    val type = (ReflectKotlinClass.Factory as ReflectKotlinClass.Factory).create(clazz)?.classHeader?.kind
     if (type == KotlinClassHeader.Kind.FILE_FACADE || type == KotlinClassHeader.Kind.MULTIFILE_CLASS || type == KotlinClassHeader.Kind.MULTIFILE_CLASS_PART)
         return null
 

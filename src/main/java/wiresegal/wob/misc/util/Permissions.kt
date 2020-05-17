@@ -1,12 +1,12 @@
 package wiresegal.wob.misc.util
 
-import de.btobastian.javacord.entities.User
-import de.btobastian.javacord.entities.channels.ServerChannel
-import de.btobastian.javacord.entities.channels.TextChannel
-import de.btobastian.javacord.entities.message.Message
-import de.btobastian.javacord.entities.message.MessageAuthor
-import de.btobastian.javacord.entities.permissions.PermissionState
-import de.btobastian.javacord.entities.permissions.PermissionType
+import org.javacord.api.entity.user.User
+import org.javacord.api.entity.channel.ServerChannel
+import org.javacord.api.entity.channel.TextChannel
+import org.javacord.api.entity.message.Message
+import org.javacord.api.entity.message.MessageAuthor
+import org.javacord.api.entity.permission.PermissionState
+import org.javacord.api.entity.permission.PermissionType
 import wiresegal.wob.permissions
 
 /**
@@ -36,7 +36,7 @@ fun User.checkPermissions(id: Long?, channel: TextChannel, level: BotRanks): Boo
 
     val server = channel.asServerChannel().get()
     val localPerms = server.getEffectivePermissions(this)
-    val roles = server.server.getRolesOf(this)
+    val roles = server.server.getRoles(this)
     val channelId = server.server.id
 
     val managerInfo = permissions[channelId]
