@@ -25,6 +25,7 @@ import wiresegal.wob.wikiIconUrl
 import wiresegal.wob.wikiTarget
 import java.io.FileNotFoundException
 import java.net.URLConnection
+import java.net.URLDecoder
 import java.net.URLEncoder
 import java.util.logging.Level
 import java.util.stream.Collectors
@@ -197,13 +198,15 @@ fun fetchPreview(searchInfo: String): Pair<List<String>, String> {
     if (splits.none { "http://en.wikipedia.org/wiki/Help:Disambiguation" in it })
         splits = splits.take(2)
 
+    splits = splits.filterNot { it.startsWith("##") }
+
     val md = splits.joinToString("\n\n")
 
     return notices to md
 }
 
 fun searchResults(searchInfo: String): Pair<Boolean, List<String>> {
-    val rawName = searchInfo.replace("[+\\s]".toRegex(), "_")
+    val rawName = URLDecoder.decode(searchInfo.replace("[+\\s]".toRegex(), "_"), "UTF-8")
     val pageInfo = wiki.getPageInfo(rawName)
 
     return if (pageInfo["exists"] as Boolean)
@@ -289,7 +292,8 @@ fun retrieveCoppermindPages(message: Message, pages: List<String>) {
     message.channel.sendMessage("Retrieving articles...").then {
         type = message.channel.typeContinuously()
 
-        val allEmbeds = pages.parallelStream().map { rawName ->
+        val allEmbeds = pages.parallelStream().map { page ->
+            val rawName = URLDecoder.decode(page, "UTF-8")
             val pageInfo = wiki.getPageInfo(rawName)
             if (!(pageInfo["exists"] as Boolean)) {
                 return@map rawName to null

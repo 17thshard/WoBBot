@@ -1,16 +1,11 @@
 package wiresegal.wob
 
+import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner
 import org.javacord.api.entity.channel.PrivateChannel
 import org.javacord.api.entity.message.Message
 import org.javacord.api.entity.message.embed.EmbedBuilder
 import org.javacord.api.event.message.MessageCreateEvent
-import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner
-import wiresegal.wob.arcanum.about
-import wiresegal.wob.arcanum.embedFromContent
-import wiresegal.wob.arcanum.entryFromId
-import wiresegal.wob.arcanum.randomEntry
-import wiresegal.wob.arcanum.searchWoB
-import wiresegal.wob.arcanum.showProgressBar
+import wiresegal.wob.arcanum.*
 import wiresegal.wob.coppermind.retrieveCoppermindPages
 import wiresegal.wob.coppermind.searchCoppermind
 import wiresegal.wob.misc.emotions.EMOTIONS
@@ -19,16 +14,9 @@ import wiresegal.wob.misc.setupDeletable
 import wiresegal.wob.misc.util.BotRanks
 import wiresegal.wob.misc.util.async
 import wiresegal.wob.misc.util.checkPermissions
-import wiresegal.wob.plugin.RegisterHandlers
-import wiresegal.wob.plugin.addAdminCommand
-import wiresegal.wob.plugin.addCommand
-import wiresegal.wob.plugin.addExactCalloutHandler
-import wiresegal.wob.plugin.addHiddenCalloutHandler
-import wiresegal.wob.plugin.addMultiCalloutHandler
-import wiresegal.wob.plugin.addSoftHiddenCommand
-import wiresegal.wob.plugin.textHandlers
+import wiresegal.wob.plugin.*
 import java.lang.reflect.Modifier
-import java.util.Locale
+import java.util.*
 import kotlin.reflect.jvm.internal.impl.descriptors.runtime.components.ReflectKotlinClass
 import kotlin.reflect.jvm.internal.impl.load.kotlin.header.KotlinClassHeader
 
@@ -141,10 +129,10 @@ fun registerBuiltinHandlers() {
                     retrieveCoppermindPages(message, allPages.map { it.groupValues[1] }.toList())
                 }
 
-                val terms = "[\"“]([/\\w\\s,]+)[\"”]".toRegex().findAll(content).toList()
+                val terms = "[\"“]([/\\w\\s,']+)[\"”]".toRegex().findAll(content).toList()
                         .flatMap {
                             it.groupValues[1].split("[\\s,]+".toRegex())
-                        }.filter { it.matches("[/\\w]+".toRegex()) }
+                        }.filter { it.matches("[/\\w']+".toRegex()) }
                         .map { it.toLowerCase().capitalize() }
 
                 if (terms.any()) async {
