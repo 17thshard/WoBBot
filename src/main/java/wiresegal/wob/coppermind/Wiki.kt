@@ -67,7 +67,10 @@ class Coppermind : Wiki(wikiTarget) {
     }
 
     override fun constructTitleString(titles: Array<out String>?): Array<String?> {
-        return super.constructTitleString(titles).map { it?.replace('+', '_') }.toTypedArray()
+        val titleStrings = super.constructTitleString(titles)
+        for (i in titleStrings.indices)
+            titleStrings[i] = titleStrings[i]?.replace('+', '_')
+        return titleStrings
     }
 
     fun resolveFragmentRedirect(title: String) = resolveFragmentRedirect(arrayOf(title))[0]
