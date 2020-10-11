@@ -18,7 +18,9 @@ import wiresegal.wob.misc.then
 import wiresegal.wob.misc.util.FakeEmbedBuilder
 import wiresegal.wob.misc.util.toJsonNode
 import wiresegal.wob.plugin.sendError
+import wiresegal.wob.plugin.sendMinorError
 import wiresegal.wob.plugin.visibleCommands
+import java.net.SocketTimeoutException
 import java.time.Instant
 
 /**
@@ -145,7 +147,10 @@ fun searchWoB(message: Message, terms: List<String>) {
             it.delete()
     }.catch {
         type.close()
-        message.sendError("An error occurred trying to look up the entry.", it)
+        if (it is SocketTimeoutException)
+            message.sendMinorError("Server request timed out.")
+        else
+            message.sendError("An error occurred trying to look up the entry.", it)
     }
 }
 

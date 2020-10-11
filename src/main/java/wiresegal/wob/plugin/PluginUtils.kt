@@ -61,6 +61,10 @@ fun TextChannel.sendRandomEmbed(requester: DiscordEntity, title: String, message
     sendMessage(embed).setupDeletable(requester).setupControls(requester, index, embeds)
 }
 
+fun Message.sendMinorError(message: String) {
+    channel.sendMinorError(message)
+}
+
 fun Message.sendError(message: String, error: Throwable) {
     channel.sendError(this.content, message, error)
 }
@@ -90,6 +94,14 @@ fun String.getClassMarkdown(clazzName: String, realName: String, line: Int = -1)
     }
 }
 
+fun Messageable.sendMinorError(message: String) {
+    sendMessage(EmbedBuilder().apply {
+        setTitle("Failed")
+        setColor(Color.RED)
+        setDescription(message)
+    })
+}
+
 fun Messageable.sendError(replyingTo: String, message: String, error: Throwable) {
     val fullTrace = StringWriter().apply { error.printStackTrace(PrintWriter(this)) }.toString()
 
@@ -105,12 +117,13 @@ fun Messageable.sendError(replyingTo: String, message: String, error: Throwable)
 
     for (line in error.stackTrace) {
         val lineString = line.run {
+            val name = fileName
             "\n\u2003`at $className.$methodName`(" + (if (isNativeMethod)
                 "Native Method"
-            else if (fileName != null && lineNumber >= 0)
-                "$fileName:$lineNumber".getClassMarkdown(className, fileName, lineNumber)
+            else if (name != null && lineNumber >= 0)
+                "$name:$lineNumber".getClassMarkdown(className, name, lineNumber)
             else
-                fileName?.getClassMarkdown(className, fileName) ?: "Unknown Source") + ")"
+                name?.getClassMarkdown(className, name) ?: "Unknown Source") + ")"
         }
 
         if (location.length + lineString.length + trace.length < DESCRIPTION_LIMIT)
