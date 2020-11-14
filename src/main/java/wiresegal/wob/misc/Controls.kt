@@ -1,5 +1,6 @@
 package wiresegal.wob.misc
 
+import io.github.vjames19.futures.jdk8.zip
 import org.javacord.api.entity.DiscordEntity
 import org.javacord.api.entity.message.Message
 import org.javacord.api.entity.message.embed.EmbedBuilder
@@ -83,14 +84,14 @@ fun Message.finalizeMessage(uid: Long) {
 }
 
 fun actOnReaction(it: ReactionAddEvent) {
-    it.requestMessage().then { message ->
+    it.requestMessage().zip(it.requestUser()).then { (message, user) ->
         if (it.reaction.isPresent) {
             val reaction = it.reaction.get()
             if (message.author.isYourself && reaction.emoji.isUnicodeEmoji) {
                 val unicode = reaction.emoji.asUnicodeEmoji().get()
-                if (!it.user.isBot && unicode in validReactions) {
+                if (!user.isBot && unicode in validReactions) {
                     if (unicode == no) {
-                        if (it.user.checkPermissions(messageToAuthor[message.id], message.channel, BotRanks.USER))
+                        if (user.checkPermissions(messageToAuthor[message.id], message.channel, BotRanks.USER))
                             it.deleteMessage()
                         else
                             it.removeReaction()
@@ -98,7 +99,7 @@ fun actOnReaction(it: ReactionAddEvent) {
                         val messageValue = messagesWithEmbedLists[message.id]
                         if (messageValue != null) {
                             val (uid, _, _, embeds) = messageValue
-                            if (it.user.checkPermissions(uid, message.channel, BotRanks.USER)) {
+                            if (user.checkPermissions(uid, message.channel, BotRanks.USER)) {
                                 when (unicode) {
                                     arrowLeft -> updateMessageWithJump(-1, message, messageValue)
                                     jumpLeft -> updateMessageWithJump(-10, message, messageValue)
