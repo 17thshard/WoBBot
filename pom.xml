@@ -186,13 +186,13 @@
         <dependency>
             <groupId>org.javacord</groupId>
             <artifactId>javacord</artifactId>
-            <version>3.0.6</version>
+            <version>3.1.1</version>
             <type>pom</type>
         </dependency>
         <dependency>
             <groupId>org.javacord</groupId>
             <artifactId>javacord-core</artifactId>
-            <version>3.0.6</version>
+            <version>3.1.1</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -218,6 +218,11 @@
             <groupId>io.github.lukehutch</groupId>
             <artifactId>fast-classpath-scanner</artifactId>
             <version>2.11.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.vjames19.kotlin-futures</groupId>
+            <artifactId>kotlin-futures-jdk8</artifactId>
+            <version>1.2.0</version>
         </dependency>
     </dependencies>
 
