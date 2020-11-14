@@ -35,16 +35,16 @@ import java.awt.Color
 
 
 val gemColors = mapOf(
-        "sapphire" to Color(0x0000FF),
-        "smokestone" to Color(0x303030),
-        "ruby" to Color(0xFF0000),
-        "diamond" to Color(0xBBBBBB),
-        "emerald" to Color(0x00FF00),
-        "garnet" to Color(0x7B0C0B),
-        "zircon" to Color(0x21B4E1),
-        "amethyst" to Color(0xAA20FF),
-        "topaz" to Color(0xCE7427),
-        "heliodor" to Color(0xCEBF2E)
+        "sapphire" to Color(0x0F3562),
+        "smokestone" to Color(0x5F5D68),
+        "ruby" to Color(0xB02D2C),
+        "diamond" to Color(0xFCF3EE),
+        "emerald" to Color(0x1E4D39),
+        "garnet" to Color(0x6C011D),
+        "zircon" to Color(0x125064),
+        "amethyst" to Color(0x672861),
+        "topaz" to Color(0xD26840),
+        "heliodor" to Color(0xEBC965)
 )
 
 fun gemColorFor(last: String): Color {
