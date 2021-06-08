@@ -31,7 +31,7 @@ val validReactions = listOf(arrowLeft, arrowRight, done, last, first, jumpLeft, 
 
 fun updateMessageWithJump(jump: Int, message: Message, entry: EmbeddedInfo) {
     val (uid, channel, index, embeds) = entry
-    val newIndex = Math.min(Math.max(index + jump, 0), embeds.size - 1)
+    val newIndex = (index + jump).coerceIn(embeds.indices)
     if (index != newIndex) {
         val newEmbed = embeds[newIndex]
         message.edit(newEmbed)

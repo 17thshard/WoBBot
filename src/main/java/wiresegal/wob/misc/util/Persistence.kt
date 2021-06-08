@@ -86,7 +86,8 @@ open class SavedMap(val location: File, val loadLimit: Int = -1, private val bac
         location.createNewFile()
         val text = location.readText()
         val entries = text.split("\n")
-                .map { it.split("::")
+                .map { line ->
+                    line.split("::")
                         .map { it.replace("\\:", ":") } }
                 .filter { it.size > 1 }
                 .apply { if (loadLimit > 0) take(loadLimit) }

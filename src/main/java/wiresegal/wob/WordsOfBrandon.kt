@@ -32,8 +32,8 @@ val messagesWithEmbedLists by lazy {
             val uid = values[0].toLongOrNull()
             val channel = values[1].toLongOrNull()
             if (uid != null && channel != null) async {
-                api.servers.forEach {
-                    it.textChannels.filter { it.id == channel }.forEach {
+                api.servers.forEach { server ->
+                    server.textChannels.filter { it.id == channel }.forEach {
                         it.getMessageById(key).whenComplete { message, _ ->
                             message.finalizeMessage(uid)
                         }
@@ -57,7 +57,7 @@ val permissions = SavedTypedMap(fileInHome("wob_bot_permissions"),
 
 val launch: Instant = Instant.now()
 
-fun main(args: Array<String>) {
+fun main() {
     LoggerUtil.getLogger("WoB").debug("Running version built at $version")
 
     notifyOwners(launch)

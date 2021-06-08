@@ -35,7 +35,7 @@ val wikiEmbedColor = Color((System.getenv("WIKI_COLOR") ?: "CB6D51").toInt(16))
 
 const val progressCachePersistence = 10L * 60 * 1000 // 10 minutes persistence for the cache
 
-fun propertyGetter(name: String) = lazy<String?> {
+fun propertyGetter(name: String) = lazy {
     val property = gitProperties.getProperty(name)
     if (property == null || property.contains("$")) null else property
 }

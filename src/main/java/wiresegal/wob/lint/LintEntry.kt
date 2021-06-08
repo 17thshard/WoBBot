@@ -23,7 +23,7 @@ var verbose = true
 
 var dates = true
 
-fun main(args: Array<String>) {
+fun main() {
     val fromCache = System.getenv("LINTER_CACHE")?.toLowerCase()?.toBoolean() ?: run {
         logForce("Do you want to load Arcanum from the last cached data? (y/n)")
         Scanner(System.`in`).next("[ynYN]").toLowerCase() == "y"
@@ -80,23 +80,23 @@ fun main(args: Array<String>) {
     // Linting after here!
 
 
-    results.printMatching("No <p> tags") {
-        it.lines.any { "<p>" !in it.text }
+    results.printMatching("No <p> tags") { result ->
+        result.lines.any { "<p>" !in it.text }
     }
-    results.printMatching("Blank speaker and/or line") {
-        it.lines.any { it.getTrueText().isBlank() || it.getTrueSpeaker().isBlank() }
+    results.printMatching("Blank speaker and/or line") { result ->
+        result.lines.any { it.getTrueText().isBlank() || it.getTrueSpeaker().isBlank() }
     }
 //    results.printMatching("Non-ascii") {
 //        it.lines.any { it.text.any { it.toInt() > 128 } || it.speaker.any { it.toInt() > 128 } }
 //    }
-    results.printMatching("<br>") {
-        it.lines.any { "<br>" in it.text }
+    results.printMatching("<br>") { result ->
+        result.lines.any { "<br>" in it.text }
     }
-    results.printMatching("Multiple newlines") {
-        it.lines.any { "\n\\s+\n".toRegex() in it.text }
+    results.printMatching("Multiple newlines") { result ->
+        result.lines.any { "\n\\s+\n".toRegex() in it.text }
     }
-    results.printMatching("Double spaces after periods") {
-        it.lines.any { ".  " in it.text }
+    results.printMatching("Double spaces after periods") { result ->
+        result.lines.any { ".  " in it.text }
     }
 
     logForce("========= Finished!")

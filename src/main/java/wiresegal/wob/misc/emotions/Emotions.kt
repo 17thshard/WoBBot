@@ -25,7 +25,7 @@ private object Reference {
             = Reference::class.java.getResourceAsStream(name)
 
     fun getResourceListing(directory: String): List<Path> {
-        val uri = Reference.getResource(directory).toURI()
+        val uri = getResource(directory).toURI()
         val myPath = if (uri.scheme == "jar")
             FileSystems.newFileSystem(uri, mapOf<String, Any>()).getPath(directory)
         else

@@ -147,7 +147,7 @@ fun searchWoB(message: Message, terms: List<String>) {
             it.delete()
     }.catch {
         type.close()
-        if (it is SocketTimeoutException)
+        if (it is SocketTimeoutException || it.cause is SocketTimeoutException)
             message.sendMinorError("Server request timed out.")
         else
             message.sendError("An error occurred trying to look up the entry.", it)
@@ -226,7 +226,7 @@ fun extractProgresses(): List<Progress> {
         progressCache.add(Progress(Entities.unescape(title).trim(), percentage.trim().substring(0, percentage.length-1), link))
     }
 
-    progressCacheTimeStamp = System.currentTimeMillis();
+    progressCacheTimeStamp = System.currentTimeMillis()
     return progressCache
 }
 
