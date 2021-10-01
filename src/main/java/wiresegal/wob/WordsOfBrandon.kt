@@ -2,6 +2,7 @@ package wiresegal.wob
 
 import org.javacord.api.DiscordApi
 import org.javacord.api.DiscordApiBuilder
+import org.javacord.api.entity.intent.Intent
 import org.javacord.api.entity.message.embed.EmbedBuilder
 import org.javacord.core.util.logging.LoggerUtil
 import wiresegal.wob.arcanum.notifyOwners
@@ -17,7 +18,17 @@ import java.time.Instant
  * Created at 9:12 PM on 1/25/18.
  */
 
-private val apiProvider = DiscordApiBuilder().setToken(token).login()
+private val apiProvider = DiscordApiBuilder()
+    .setToken(token)
+    .setIntents(
+        Intent.GUILDS,
+        Intent.GUILD_MEMBERS,
+        Intent.GUILD_MESSAGES,
+        Intent.GUILD_MESSAGE_REACTIONS,
+        Intent.DIRECT_MESSAGES,
+        Intent.DIRECT_MESSAGE_REACTIONS
+    )
+    .login()
 
 val api: DiscordApi by lazy { apiProvider.join() }
 

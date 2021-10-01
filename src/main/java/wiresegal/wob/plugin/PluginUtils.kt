@@ -107,7 +107,7 @@ fun Messageable.sendError(replyingTo: String, message: String, error: Throwable)
 
     val location = when (this) {
         is Mentionable -> "in " + this.mentionTag + "\n"
-        is PrivateChannel -> "in " + this.recipient.mentionTag + "\n"
+        is PrivateChannel -> "in " + (this.recipient.orElse(null)?.mentionTag?.plus("\n") ?: "")
         is GroupChannel -> "in " + (this.name.orElse(null)?.plus("\n") ?: "") +
                 this.members.joinToString { it.mentionTag } + "\n"
         else -> ""
@@ -143,7 +143,7 @@ fun Messageable.sendError(replyingTo: String, message: String, error: Throwable)
     val wireID = 77084495118868480L
     val ownerID = api.ownerId
 
-    val myId = (this as? User)?.id ?: (this as? PrivateChannel)?.recipient?.id
+    val myId = (this as? User)?.id ?: (this as? PrivateChannel)?.recipient?.orElse(null)?.id
 
     if ((myId == wireID && wobCommand == "wob") || myId == ownerID) {
         sendTo(replyingTo, "message")
