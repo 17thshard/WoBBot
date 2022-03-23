@@ -28,10 +28,10 @@ val urlTarget = System.getenv("ARCANUM_URL") ?: "https://wob.coppermind.net"
 val wikiTarget = System.getenv("WIKI_URL") ?: "coppermind.net"
 val wikiCommand = System.getenv("WIKI_COMMAND") ?: "coppermind|cm"
 val wobCommand = System.getenv("WOB_COMMAND") ?: "wob"
-val iconUrl = System.getenv("ARCANUM_ICON") ?: "https://cdn.discordapp.com/emojis/373082865073913859.png?v=1"
-val wikiIconUrl = System.getenv("WIKI_ICON") ?: "https://cdn.discordapp.com/emojis/432391749550342145.png?v=1"
-val embedColor = Color((System.getenv("ARCANUM_COLOR") ?: "003A52").toInt(16))
-val wikiEmbedColor = Color((System.getenv("WIKI_COLOR") ?: "CB6D51").toInt(16))
+val iconUrl = System.getenv("ARCANUM_ICON") ?: "https://cdn.discordapp.com/emojis/909180911269081179.png"
+val wikiIconUrl = System.getenv("WIKI_ICON") ?: "https://cdn.discordapp.com/emojis/909180911206146119.png"
+val embedColor = Color((System.getenv("ARCANUM_COLOR") ?: "00635B").toInt(16))
+val wikiEmbedColor = Color((System.getenv("WIKI_COLOR") ?: "A9431E").toInt(16))
 
 const val progressCachePersistence = 10L * 60 * 1000 // 10 minutes persistence for the cache
 
