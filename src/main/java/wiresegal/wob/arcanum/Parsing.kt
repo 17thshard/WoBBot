@@ -172,7 +172,7 @@ fun about(message: Message) {
                 (visibleCommands.filter { it.matches(message) }.joinToString("\n") { " * " + it.name }) + "\n" +
                 "Author: $wireStr$add\n" +
                 "[Invite Link]($invite) | " +
-                "[Github Source](https://github.com/Palanaeum/WoBBot) | " +
+                "[Github Source](https://github.com/17thshard/WoBBot) | " +
                 "[Arcanum]($urlTarget)")
     })
 }
