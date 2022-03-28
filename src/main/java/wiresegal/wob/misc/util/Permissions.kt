@@ -3,6 +3,9 @@ package wiresegal.wob.misc.util
 import org.javacord.api.entity.user.User
 import org.javacord.api.entity.channel.ServerChannel
 import org.javacord.api.entity.channel.TextChannel
+import org.javacord.api.entity.channel.ServerThreadChannel
+import org.javacord.api.entity.channel.ServerTextChannel
+import org.javacord.api.entity.channel.ServerVoiceChannel
 import org.javacord.api.entity.message.Message
 import org.javacord.api.entity.message.MessageAuthor
 import org.javacord.api.entity.permission.PermissionState
@@ -32,9 +35,12 @@ fun User.checkPermissions(channel: TextChannel, level: BotRanks) = checkPermissi
 fun User.checkPermissions(id: Long?, channel: TextChannel, level: BotRanks): Boolean {
 
     if (this.isBotOwner) return true
-    if (channel !is ServerChannel) return true
 
-    val server = channel.asServerTextChannel().get()
+    val server =
+        if (channel is ServerTextChannel) channel
+        else if (channel is ServerThreadChannel) channel.parent
+        else if (channel !is ServerChannel) return true
+        else return false
     val localPerms = server.getEffectivePermissions(this)
     val roles = server.server.getRoles(this)
     val channelId = server.server.id
