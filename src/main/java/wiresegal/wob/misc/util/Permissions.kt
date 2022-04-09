@@ -33,8 +33,11 @@ fun User.checkPermissions(id: Long?, channel: TextChannel, level: BotRanks): Boo
 
     if (this.isBotOwner) return true
     if (channel !is ServerChannel) return true
-
-    val server = channel.asServerTextChannel().get()
+    val server = try {
+        channel.asServerTextChannel().get()
+    } catch (err: NoSuchElementException) {
+        return false
+    }
     val localPerms = server.getEffectivePermissions(this)
     val roles = server.server.getRoles(this)
     val channelId = server.server.id
