@@ -18,6 +18,7 @@ import wiresegal.wob.misc.catch
 import wiresegal.wob.misc.setupControls
 import wiresegal.wob.misc.setupDeletable
 import wiresegal.wob.misc.then
+import wiresegal.wob.misc.util.spoilerTag
 import wiresegal.wob.misc.util.toJsonNode
 import wiresegal.wob.plugin.sendError
 import wiresegal.wob.wikiEmbedColor
@@ -232,10 +233,10 @@ fun searchResults(searchInfo: String): Pair<Boolean, List<String>> {
 
 }
 
-fun embedFromWiki(titlePrefix: String, name: String, entry: Pair<List<String>, String>): EmbedBuilder {
+fun embedFromWiki(titlePrefix: String, name: String, entry: Pair<List<String>, String>, shouldHide: Boolean = false): EmbedBuilder {
     val (notices, body) = entry
 
-    val title = (titlePrefix + name.replace("+", " ").replace("#", ": ")).take(TITLE_LIMIT)
+    val title = (titlePrefix + name.replace("+", " ").replace("#", ": ")).take(TITLE_LIMIT).spoilerTag(shouldHide)
 
     val embed = EmbedBuilder()
             .setColor(wikiEmbedColor)
@@ -253,7 +254,7 @@ fun embedFromWiki(titlePrefix: String, name: String, entry: Pair<List<String>, S
         desc = desc.substring(0, "\\.[\"”'’]?\\s".toRegex().findAll(desc)
                 .lastOrNull { it.range.first <= DESCRIPTION_LIMIT }?.range?.endInclusive ?: DESCRIPTION_LIMIT)
 
-    embed.setDescription(desc)
+    embed.setDescription(desc.spoilerTag(shouldHide))
 
     if (embed.toJsonNode().toString().length > EMBED_LIMIT)
         return backupEmbed(titlePrefix, name)
@@ -267,7 +268,7 @@ fun backupEmbed(title: String, name: String): EmbedBuilder {
             .setThumbnail(wikiIconUrl).setDescription("An error occurred in loading the wiki preview.")
 }
 
-fun harvestFromWiki(terms: List<String>): List<EmbedBuilder> {
+fun harvestFromWiki(terms: List<String>, shouldHide: Boolean = false): List<EmbedBuilder> {
     val (large, rawArticles) = searchResults(terms.joinToString("+"))
     val allArticles = rawArticles.mapNotNull {
         try {
@@ -283,13 +284,13 @@ fun harvestFromWiki(terms: List<String>): List<EmbedBuilder> {
     for ((idx, article) in allArticles.withIndex()) {
         val (name, body) = article
         val titleText = "Search: \"${terms.joinToString(" ")}\" (${idx + 1}/$size) \n"
-        allEmbeds.add(embedFromWiki(titleText, name, body))
+        allEmbeds.add(embedFromWiki(titleText, name, body, shouldHide))
     }
 
     return allEmbeds
 }
 
-fun retrieveCoppermindPages(message: Message, pages: List<String>) {
+fun retrieveCoppermindPages(message: Message, pages: List<String>, shouldHide: Boolean = false) {
     var type = AutoCloseable {}
 
     message.channel.sendMessage("Retrieving articles...").then {
@@ -304,14 +305,14 @@ fun retrieveCoppermindPages(message: Message, pages: List<String>) {
 
             val pageName = wiki.resolveFragmentRedirect(rawName) ?: (pageInfo["displaytitle"] as String)
             val preview = fetchPreview(pageName)
-            pageName to embedFromWiki("", pageName, preview)
+            pageName to embedFromWiki("", pageName, preview, shouldHide)
         }.collect(Collectors.toList())
 
         type.close()
 
         allEmbeds.forEach { (name, embed) ->
             if (embed == null) {
-                message.channel.sendMessage("Couldn't find the article \"$name\".")
+                message.channel.sendMessage("Couldn't find the article \"${name.spoilerTag(shouldHide)}\".")
             } else {
                 message.channel.sendMessage(embed).setupDeletable(message.author)
             }
@@ -325,28 +326,29 @@ fun retrieveCoppermindPages(message: Message, pages: List<String>) {
     }
 }
 
-fun searchCoppermind(message: Message, terms: List<String>) {
+fun searchCoppermind(message: Message, terms: List<String>, shouldHide: Boolean = false) {
     var type = AutoCloseable {}
 
-    message.channel.sendMessage("Searching for \"${terms.joinToString(" ")}\"...").then {
+    val search = terms.joinToString(" ").spoilerTag(shouldHide)
+    message.channel.sendMessage("Searching for \"$search\"...").then {
         type = message.channel.typeContinuously()
-        val allEmbeds = harvestFromWiki(terms)
+        val allEmbeds = harvestFromWiki(terms, shouldHide)
 
         type.close()
 
         try {
             when {
-                allEmbeds.isEmpty() -> message.channel.sendMessage("Couldn't find any articles for \"${terms.joinToString(" ")}\".")
+                allEmbeds.isEmpty() -> message.channel.sendMessage("Couldn't find any articles for \"$search\".")
                 allEmbeds.size == 1 -> {
                     val finalEmbed = allEmbeds.first()
-                    finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
+                    finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n|\\|\\|".toRegex(), "").spoilerTag(shouldHide))
                     message.channel.sendMessage(finalEmbed).setupDeletable(message.author)
                 }
                 else ->
-                    message.channel.sendMessage(allEmbeds.first()).setupDeletable(message.author).setupControls(message.author, 0, allEmbeds)
+                    message.channel.sendMessage(allEmbeds.first()).setupDeletable(message.author).setupControls(message.author, 0, shouldHide, allEmbeds)
             }
         } catch (e: FileNotFoundException) {
-            message.channel.sendMessage("Couldn't find any articles for \"${terms.joinToString(" ")}\".")
+            message.channel.sendMessage("Couldn't find any articles for \"$search\".")
         }
         if (it.channel !is PrivateChannel)
             it.delete()
