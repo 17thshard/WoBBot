@@ -32,7 +32,7 @@ private val apiProvider = DiscordApiBuilder()
 
 val api: DiscordApi by lazy { apiProvider.join() }
 
-data class EmbeddedInfo(val user: Long, val channel: Long, val index: Int, val embeds: List<EmbedBuilder>)
+data class EmbeddedInfo(val user: Long, val channel: Long, val index: Int, val shouldHide: Boolean, val embeds: List<EmbedBuilder>)
 
 val messagesWithEmbedLists by lazy {
     SavedTypedMap<Long, EmbeddedInfo>(fileInHome("wob_bot_messages"),
