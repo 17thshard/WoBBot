@@ -1,0 +1,15 @@
+[package]
+name = "wobbot"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+html2md = "0.2.14"
+poise = {version = "0.6.1"}
+reqwest = "0.12.5"
+serde = { version = "1.0.203", features = ["derive"] }
+serde_json = "1.0.117"
+serenity = { version = "0.12.2", features = ["builder"] }
+tokio = {version = "1.38.0", features = ["rt-multi-thread"]}
