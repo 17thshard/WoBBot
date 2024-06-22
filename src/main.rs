@@ -11,13 +11,8 @@ mod arcanum;
 mod util;
 
 use ::serenity::all::ButtonStyle;
-use ::serenity::builder::{
-    CreateInteractionResponse, CreateInteractionResponseMessage, EditMessage,
-};
-use ::serenity::{
-    all::ReactionType,
-    builder::{CreateActionRow, CreateButton},
-};
+use ::serenity::builder::CreateInteractionResponse;
+use ::serenity::builder::{CreateActionRow, CreateButton};
 use util::Result;
 
 struct Data {
@@ -35,7 +30,7 @@ pub async fn register(ctx: Context<'_>) -> Result<()> {
 }
 
 #[poise::command(prefix_command, slash_command, subcommands("search", "random"))]
-pub async fn wob(ctx: Context<'_>) -> Result<()> {
+pub async fn wob(_ctx: Context<'_>) -> Result<()> {
     Ok(())
 }
 
@@ -43,16 +38,19 @@ pub async fn wob(ctx: Context<'_>) -> Result<()> {
 pub async fn search(ctx: Context<'_>, terms: Vec<String>) -> Result<()> {
     println!("{terms:?}");
 
-    let mut m = ctx
-        .send(CreateReply::default().content(format!("Searching for '{}' ...", terms.join(", "))))
-        .await?
-        .into_message()
+    let reply = ctx
+        .send(
+            CreateReply::default()
+                .ephemeral(true)
+                .content(format!("Searching for '{}' ...", terms.join(", "))),
+        )
         .await?;
 
     let entries = ctx.data().arcanum.search_entries(&terms).await?;
 
     if entries.count == 0 {
-        m.edit(&ctx, EditMessage::new().content("No results found!"))
+        reply
+            .edit(ctx, CreateReply::default().content("No results found!"))
             .await?;
         return Ok(());
     }
@@ -60,7 +58,7 @@ pub async fn search(ctx: Context<'_>, terms: Vec<String>) -> Result<()> {
     let mut cur_idx = 0;
 
     let get_edit = |idx: usize| {
-        EditMessage::new()
+        CreateReply::default()
             .content("")
             .embed(ctx.data().arcanum.embed_entry(&entries.results[idx]))
             .components(vec![
@@ -97,12 +95,12 @@ pub async fn search(ctx: Context<'_>, terms: Vec<String>) -> Result<()> {
             ])
     };
 
-    m.edit(&ctx, get_edit(cur_idx)).await?;
+    reply.edit(ctx, get_edit(cur_idx)).await?;
 
-    let inner_context: &serenity::Context = ctx.as_ref();
-
-    let mut interaction_stream = m
-        .await_component_interaction(&inner_context.shard)
+    let mut interaction_stream = reply
+        .message()
+        .await?
+        .await_component_interaction(ctx)
         .timeout(Duration::from_secs(180))
         .stream();
 
@@ -112,7 +110,7 @@ pub async fn search(ctx: Context<'_>, terms: Vec<String>) -> Result<()> {
         match kind.as_str() {
             "next" => {
                 cur_idx += 1;
-                m.edit(&ctx, get_edit(cur_idx)).await?;
+                reply.edit(ctx, get_edit(cur_idx)).await?;
 
                 interaction
                     .create_response(&ctx, CreateInteractionResponse::Acknowledge)
@@ -120,7 +118,7 @@ pub async fn search(ctx: Context<'_>, terms: Vec<String>) -> Result<()> {
             }
             "back" => {
                 cur_idx -= 1;
-                m.edit(&ctx, get_edit(cur_idx)).await?;
+                reply.edit(ctx, get_edit(cur_idx)).await?;
 
                 interaction
                     .create_response(&ctx, CreateInteractionResponse::Acknowledge)
@@ -128,7 +126,7 @@ pub async fn search(ctx: Context<'_>, terms: Vec<String>) -> Result<()> {
             }
             "next_10" => {
                 cur_idx += 10;
-                m.edit(&ctx, get_edit(cur_idx)).await?;
+                reply.edit(ctx, get_edit(cur_idx)).await?;
 
                 interaction
                     .create_response(&ctx, CreateInteractionResponse::Acknowledge)
@@ -136,7 +134,7 @@ pub async fn search(ctx: Context<'_>, terms: Vec<String>) -> Result<()> {
             }
             "back_10" => {
                 cur_idx -= 10;
-                m.edit(&ctx, get_edit(cur_idx)).await?;
+                reply.edit(ctx, get_edit(cur_idx)).await?;
 
                 interaction
                     .create_response(&ctx, CreateInteractionResponse::Acknowledge)
@@ -148,7 +146,7 @@ pub async fn search(ctx: Context<'_>, terms: Vec<String>) -> Result<()> {
                     .create_response(&ctx, CreateInteractionResponse::Acknowledge)
                     .await?;
 
-                m.delete(&ctx).await?;
+                reply.delete(ctx).await?;
                 break;
             }
             "done" => {
@@ -156,7 +154,13 @@ pub async fn search(ctx: Context<'_>, terms: Vec<String>) -> Result<()> {
                     .create_response(&ctx, CreateInteractionResponse::Acknowledge)
                     .await?;
 
-                m.edit(&ctx, EditMessage::new().components(vec![])).await?;
+                reply.delete(ctx).await?;
+
+                ctx.send(
+                    CreateReply::default()
+                        .embed(ctx.data().arcanum.embed_entry(&entries.results[cur_idx])),
+                )
+                .await?;
             }
             _ => {
                 println!("Unhandled interaction: {}", kind);

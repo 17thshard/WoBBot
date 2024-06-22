@@ -38,11 +38,9 @@ pub struct Line {
 }
 
 impl Arcanum {
-    async fn raw_request(&self, endpoint: &str, params: &Vec<(&str, &str)>) -> Result<String> {
+    async fn raw_request(&self, endpoint: &str, params: &[(&str, &str)]) -> Result<String> {
         let base_url = format!("{}{}", self.base_url, endpoint);
         let url = Url::parse_with_params(&base_url, params).expect("Invalid URL or parameters");
-
-        println!("URL: {url}");
 
         let response = reqwest::get(url).await?.text().await?;
         Ok(response)
@@ -67,13 +65,11 @@ impl Arcanum {
     }
 
     pub async fn random_entry(&self) -> Result<Entry> {
-        Ok(serde_json::from_str(
-            &self.raw_request("/api/random_entry", &vec![]).await?,
-        )?)
+        serde_json::from_str(&self.raw_request("/api/random_entry", &[]).await?).map_err(Into::into)
     }
 
     pub async fn search_entries(&self, terms: &[String]) -> Result<PaginatedEntries> {
-        Ok(serde_json::from_str::<PaginatedEntries>(
+        serde_json::from_str::<PaginatedEntries>(
             &self
                 .raw_request(
                     "/api/search_entry",
@@ -84,7 +80,8 @@ impl Arcanum {
                     ],
                 )
                 .await?,
-        )?)
+        )
+        .map_err(Into::into)
     }
 
     pub fn new(base_url: String, icon: String) -> Self {
