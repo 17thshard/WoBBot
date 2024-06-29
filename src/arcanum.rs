@@ -32,7 +32,7 @@ pub struct Entry {
     modified_date: String,
     tags: Vec<String>,
     lines: Vec<Line>,
-    note: String,
+    note: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -64,6 +64,9 @@ impl Arcanum {
         //       relevant for generating other messages
         const EMBED_COLOR: (u8, u8, u8) = (0, 99, 91);
         const TITLE_LIMIT: usize = 256;
+        const FIELD_LIMIT: usize = 25;
+        const FIELD_TEXT_LIMIT: usize = 1024;
+        const ARCANUM_SUFFIX: &str = "*… (Check Arcanum for more.)*";
 
         fn pretty_print_date(date_str: &str) -> Option<String> {
             const MONTHS: [&str; 12] = [
@@ -83,11 +86,19 @@ impl Arcanum {
             None
         }
 
-        fn truncate(s: &String, len: usize) -> &str {
+        fn truncate(s: &str, len: usize) -> &str {
             if let Some((idx, _)) = s.char_indices().nth(len) {
                 &s[..idx]
             } else {
                 s
+            }
+        }
+
+        fn truncate_with_suffix(s: &str, len: usize, suffix: &str) -> String {
+            if s.len() > len {
+                truncate(s, len - suffix.len()).to_owned() + suffix
+            } else {
+                s.to_string()
             }
         }
 
@@ -100,33 +111,46 @@ impl Arcanum {
         .flatten()
         .collect();
 
-        // TODO: this should check for size, etc
-        CreateEmbed::new()
-            .title(truncate(
-                &format!(
-                    "{} ({})",
-                    &entry.event_name,
-                    pretty_print_date(&entry.date).unwrap_or_else(|| entry.date.clone())
-                ),
-                TITLE_LIMIT,
-            ))
+        // https://discord.com/developers/docs/resources/channel#embed-object-embed-limits
+
+        let mut embed = CreateEmbed::new()
             .color(EMBED_COLOR)
             .url(format!(
                 "{}/events/{}/#e{}",
                 self.base_url, entry.event, entry.id
             ))
-            .thumbnail(&self.icon)
-            .fields(
-                entry
-                    .lines
-                    .iter()
-                    .map(|Line { speaker, text }| (parse_html(speaker), parse_html(text), false)),
-            )
-            .description(if flags.is_empty() {
-                "".into()
-            } else {
-                "**".to_owned() + &flags.join(" ") + "**"
-            })
+            .thumbnail(&self.icon);
+        let mut left = 6000;
+
+        let full_title = format!(
+            "{} ({})",
+            &entry.event_name,
+            pretty_print_date(&entry.date).unwrap_or_else(|| entry.date.clone())
+        );
+        let title = truncate(&full_title, TITLE_LIMIT);
+        embed = embed.title(title);
+        left -= title.len();
+
+        let description = if flags.is_empty() {
+            "".into()
+        } else {
+            "**".to_owned() + &flags.join(" ") + "**"
+        };
+        embed = embed.description(&description);
+        left -= description.len();
+
+        for Line { speaker, text } in entry.lines.iter().take(FIELD_LIMIT) {
+            let speaker = parse_html(speaker);
+            let text = truncate_with_suffix(&parse_html(text), FIELD_TEXT_LIMIT, ARCANUM_SUFFIX);
+
+            if speaker.len() + text.len() <= left {
+                embed = embed.field(&speaker, &text, false);
+                left -= speaker.len();
+                left -= text.len();
+            }
+        }
+
+        embed
     }
 
     pub async fn random_entry(&self) -> Result<Entry> {
