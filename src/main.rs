@@ -11,8 +11,8 @@ mod arcanum;
 mod util;
 
 use ::serenity::all::ButtonStyle;
-use ::serenity::builder::CreateInteractionResponse;
 use ::serenity::builder::{CreateActionRow, CreateButton};
+use ::serenity::builder::{CreateInteractionResponse, CreateMessage};
 use tokio::time::timeout;
 use util::Result;
 
@@ -37,8 +37,6 @@ pub async fn wob(_ctx: Context<'_>) -> Result<()> {
 
 #[poise::command(prefix_command, slash_command)]
 pub async fn search(ctx: Context<'_>, terms: Vec<String>) -> Result<()> {
-    println!("{terms:?}");
-
     let reply = ctx
         .send(
             CreateReply::default()
@@ -159,14 +157,16 @@ pub async fn search(ctx: Context<'_>, terms: Vec<String>) -> Result<()> {
 
                         reply.delete(ctx).await?;
 
-                        ctx.send(
-                            CreateReply::default().embed(
-                                ctx.data()
-                                    .arcanum
-                                    .embed_entry(&entries.get_entry(cur_idx).await?),
-                            ),
-                        )
-                        .await?;
+                        ctx.channel_id()
+                            .send_message(
+                                ctx,
+                                CreateMessage::default().embed(
+                                    ctx.data()
+                                        .arcanum
+                                        .embed_entry(&entries.get_entry(cur_idx).await?),
+                                ),
+                            )
+                            .await?;
 
                         break;
                     }
