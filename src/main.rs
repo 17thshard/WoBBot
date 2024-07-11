@@ -4,7 +4,7 @@ use arcanum::Arcanum;
 use poise::futures_util::StreamExt;
 use poise::{
     serenity_prelude::{self as serenity},
-    ChoiceParameter, CreateReply,
+    CreateReply,
 };
 
 mod arcanum;
@@ -46,7 +46,8 @@ pub async fn search(ctx: Context<'_>, terms: Vec<String>) -> Result<()> {
         )
         .await?;
 
-    let entries = ctx.data().arcanum.search_entries(&terms).await?;
+    let mut entries = ctx.data().arcanum.search_entries(terms).await?;
+    let count = entries.count as usize;
 
     if entries.count == 0 {
         reply
@@ -57,45 +58,51 @@ pub async fn search(ctx: Context<'_>, terms: Vec<String>) -> Result<()> {
 
     let mut cur_idx = 0;
 
-    let get_edit = |idx: usize| {
-        CreateReply::default()
-            .content("")
-            .embed(ctx.data().arcanum.embed_entry(&entries.results[idx]))
-            .components(vec![
-                CreateActionRow::Buttons(vec![
-                    CreateButton::new("back_10")
-                        .disabled(idx < 10)
-                        .style(ButtonStyle::Secondary)
-                        .label("Back 10"),
-                    CreateButton::new("back")
-                        .disabled(idx == 0)
-                        .style(ButtonStyle::Secondary)
-                        .label("Back"),
-                    CreateButton::new("info")
-                        .style(ButtonStyle::Secondary)
-                        .disabled(true)
-                        .label(format!("{}/{}", idx + 1, entries.results.len())),
-                    CreateButton::new("next")
-                        .disabled(idx + 1 >= entries.results.len())
-                        .style(ButtonStyle::Secondary)
-                        .label("Next"),
-                    CreateButton::new("next_10")
-                        .disabled(idx + 10 >= entries.results.len())
-                        .style(ButtonStyle::Secondary)
-                        .label("Next 10"),
-                ]),
-                CreateActionRow::Buttons(vec![
-                    CreateButton::new("done")
-                        .style(ButtonStyle::Success)
-                        .label("Done"),
-                    CreateButton::new("delete")
-                        .style(ButtonStyle::Danger)
-                        .label("Delete"),
-                ]),
-            ])
+    let get_edit_components = |idx: usize, count: usize| {
+        CreateReply::default().content("").components(vec![
+            CreateActionRow::Buttons(vec![
+                CreateButton::new("back_10")
+                    .disabled(idx < 10)
+                    .style(ButtonStyle::Secondary)
+                    .label("Back 10"),
+                CreateButton::new("back")
+                    .disabled(idx == 0)
+                    .style(ButtonStyle::Secondary)
+                    .label("Back"),
+                CreateButton::new("info")
+                    .style(ButtonStyle::Secondary)
+                    .disabled(true)
+                    .label(format!("{}/{}", idx + 1, count)),
+                CreateButton::new("next")
+                    .disabled(idx + 1 >= count)
+                    .style(ButtonStyle::Secondary)
+                    .label("Next"),
+                CreateButton::new("next_10")
+                    .disabled(idx + 10 >= count)
+                    .style(ButtonStyle::Secondary)
+                    .label("Next 10"),
+            ]),
+            CreateActionRow::Buttons(vec![
+                CreateButton::new("done")
+                    .style(ButtonStyle::Success)
+                    .label("Done"),
+                CreateButton::new("delete")
+                    .style(ButtonStyle::Danger)
+                    .label("Delete"),
+            ]),
+        ])
     };
 
-    reply.edit(ctx, get_edit(cur_idx)).await?;
+    reply
+        .edit(
+            ctx,
+            get_edit_components(cur_idx, count).embed(
+                ctx.data()
+                    .arcanum
+                    .embed_entry(&entries.get_entry(cur_idx).await?),
+            ),
+        )
+        .await?;
 
     let mut interaction_stream = reply
         .message()
@@ -108,33 +115,27 @@ pub async fn search(ctx: Context<'_>, terms: Vec<String>) -> Result<()> {
         let kind = &interaction.data.custom_id;
 
         match kind.as_str() {
-            "next" => {
-                cur_idx += 1;
-                reply.edit(ctx, get_edit(cur_idx)).await?;
+            "next" | "back" | "next_10" | "back_10" => {
+                let delta = match kind.as_str() {
+                    "next" => 1,
+                    "back" => -1,
+                    "next_10" => 10,
+                    "back_10" => -10,
+                    &_ => unreachable!(),
+                };
 
-                interaction
-                    .create_response(&ctx, CreateInteractionResponse::Acknowledge)
-                    .await?;
-            }
-            "back" => {
-                cur_idx -= 1;
-                reply.edit(ctx, get_edit(cur_idx)).await?;
+                cur_idx = cur_idx.checked_add_signed(delta).unwrap();
 
-                interaction
-                    .create_response(&ctx, CreateInteractionResponse::Acknowledge)
+                reply
+                    .edit(
+                        ctx,
+                        get_edit_components(cur_idx, count).embed(
+                            ctx.data()
+                                .arcanum
+                                .embed_entry(&entries.get_entry(cur_idx).await?),
+                        ),
+                    )
                     .await?;
-            }
-            "next_10" => {
-                cur_idx += 10;
-                reply.edit(ctx, get_edit(cur_idx)).await?;
-
-                interaction
-                    .create_response(&ctx, CreateInteractionResponse::Acknowledge)
-                    .await?;
-            }
-            "back_10" => {
-                cur_idx -= 10;
-                reply.edit(ctx, get_edit(cur_idx)).await?;
 
                 interaction
                     .create_response(&ctx, CreateInteractionResponse::Acknowledge)
@@ -157,10 +158,15 @@ pub async fn search(ctx: Context<'_>, terms: Vec<String>) -> Result<()> {
                 reply.delete(ctx).await?;
 
                 ctx.send(
-                    CreateReply::default()
-                        .embed(ctx.data().arcanum.embed_entry(&entries.results[cur_idx])),
+                    CreateReply::default().embed(
+                        ctx.data()
+                            .arcanum
+                            .embed_entry(&entries.get_entry(cur_idx).await?),
+                    ),
                 )
                 .await?;
+
+                break;
             }
             _ => {
                 println!("Unhandled interaction: {}", kind);

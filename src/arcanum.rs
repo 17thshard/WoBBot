@@ -1,16 +1,19 @@
+use std::sync::Arc;
+
 use crate::util::Result;
 use html2md::parse_html;
 use itertools::Itertools;
 use reqwest::Url;
 use serde::Deserialize;
-use serenity::builder::CreateEmbed;
+use serenity::{builder::CreateEmbed, futures::future::BoxFuture};
 
+#[derive(Debug)]
 pub struct Arcanum {
     base_url: String,
     icon: String,
 }
 
-#[derive(Eq, PartialEq, Debug, Deserialize)]
+#[derive(Clone, Eq, PartialEq, Debug, Deserialize)]
 pub enum EventState {
     #[serde(rename = "APPROVED")]
     Approved,
@@ -20,7 +23,8 @@ pub enum EventState {
     Legacy,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 pub struct Entry {
     id: u64,
     event: u64,
@@ -36,6 +40,7 @@ pub struct Entry {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct PaginatedEntries {
     pub count: u64,
     next: Option<String>,
@@ -43,7 +48,15 @@ pub struct PaginatedEntries {
     pub results: Vec<Entry>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
+pub struct PaginatedSearch<'a> {
+    pub count: u64,
+    pages: Vec<Option<PaginatedEntries>>,
+    arcanum: &'a Arcanum,
+    terms: Vec<String>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
 pub struct Line {
     speaker: String,
     text: String,
@@ -59,7 +72,6 @@ impl Arcanum {
     }
 
     pub fn embed_entry(&self, entry: &Entry) -> CreateEmbed {
-        // some constants describing embed formatting
         // TODO: can be moved elsewhere if it is
         //       relevant for generating other messages
         const EMBED_COLOR: (u8, u8, u8) = (0, 99, 91);
@@ -157,23 +169,72 @@ impl Arcanum {
         serde_json::from_str(&self.raw_request("/api/random_entry", &[]).await?).map_err(Into::into)
     }
 
-    pub async fn search_entries(&self, terms: &[String]) -> Result<PaginatedEntries> {
-        serde_json::from_str::<PaginatedEntries>(
-            &self
-                .raw_request(
-                    "/api/search_entry",
-                    &[
-                        ("page_size", "250"),
-                        ("ordering", "rank"),
-                        ("query", &terms.join("+")),
-                    ],
-                )
-                .await?,
-        )
-        .map_err(Into::into)
+    pub async fn search_entries(&self, terms: Vec<String>) -> Result<PaginatedSearch> {
+        // let load_page: impl Fn(usize) -> |idx: usize| async {
+        //
+
+        // let first_page = BoxFuture::new(load_page(1));
+        // let second_page = load_page(1).await?;
+        //
+        //
+        //
+        Ok(PaginatedSearch::new(self, terms).await?)
     }
 
     pub fn new(base_url: String, icon: String) -> Self {
         Arcanum { base_url, icon }
+    }
+}
+
+impl<'a> PaginatedSearch<'a> {
+    async fn new(arcanum: &'a Arcanum, terms: Vec<String>) -> Result<Self> {
+        let first_page = Self::load_page(arcanum, &terms, 0).await?;
+        let count = first_page.count;
+        let num_pages = ((count as usize) + 1) / 250;
+        let mut pages: Vec<_> = (0..num_pages).map(|_| None).collect();
+
+        pages[0] = Some(first_page);
+
+        Ok(Self {
+            arcanum,
+            terms,
+            count,
+            pages,
+        })
+    }
+
+    pub async fn get_entry(&mut self, idx: usize) -> Result<Entry> {
+        let page_idx = idx / 250;
+        let pagination_idx = idx - 250 * page_idx;
+
+        if let Some(pagination) = &self.pages[page_idx] {
+            Ok(pagination.results[pagination_idx].clone())
+        } else {
+            let page = Self::load_page(self.arcanum, &self.terms, page_idx).await?;
+            let ret = page.results[pagination_idx].clone();
+
+            self.pages[page_idx] = Some(page);
+
+            Ok(ret)
+        }
+    }
+
+    async fn load_page(
+        arcanum: &'a Arcanum,
+        terms: &Vec<String>,
+        page: usize,
+    ) -> Result<PaginatedEntries> {
+        arcanum
+            .raw_request(
+                "/api/search_entry",
+                &[
+                    ("page_size", "250"),
+                    ("ordering", "rank"),
+                    ("page", &(page + 1).to_string()),
+                    ("query", &terms.join("+")),
+                ],
+            )
+            .await
+            .and_then(|s| serde_json::from_str::<PaginatedEntries>(&s).map_err(Into::into))
     }
 }
