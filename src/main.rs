@@ -13,6 +13,7 @@ mod util;
 use ::serenity::all::ButtonStyle;
 use ::serenity::builder::CreateInteractionResponse;
 use ::serenity::builder::{CreateActionRow, CreateButton};
+use tokio::time::timeout;
 use util::Result;
 
 struct Data {
@@ -108,74 +109,82 @@ pub async fn search(ctx: Context<'_>, terms: Vec<String>) -> Result<()> {
         .message()
         .await?
         .await_component_interaction(ctx)
-        .timeout(Duration::from_secs(180))
         .stream();
 
-    while let Some(interaction) = interaction_stream.next().await {
-        let kind = &interaction.data.custom_id;
+    loop {
+        match timeout(Duration::from_secs(300), interaction_stream.next()).await {
+            Ok(Some(interaction)) => {
+                let kind = interaction.data.custom_id.as_str();
 
-        match kind.as_str() {
-            "next" | "back" | "next_10" | "back_10" => {
-                let delta = match kind.as_str() {
-                    "next" => 1,
-                    "back" => -1,
-                    "next_10" => 10,
-                    "back_10" => -10,
-                    &_ => unreachable!(),
-                };
+                match kind {
+                    "next" | "back" | "next_10" | "back_10" => {
+                        let delta = match kind {
+                            "next" => 1,
+                            "back" => -1,
+                            "next_10" => 10,
+                            "back_10" => -10,
+                            &_ => unreachable!(),
+                        };
 
-                cur_idx = cur_idx.checked_add_signed(delta).unwrap();
+                        cur_idx = cur_idx.checked_add_signed(delta).unwrap();
 
-                reply
-                    .edit(
-                        ctx,
-                        get_edit_components(cur_idx, count).embed(
-                            ctx.data()
-                                .arcanum
-                                .embed_entry(&entries.get_entry(cur_idx).await?),
-                        ),
-                    )
-                    .await?;
+                        reply
+                            .edit(
+                                ctx,
+                                get_edit_components(cur_idx, count).embed(
+                                    ctx.data()
+                                        .arcanum
+                                        .embed_entry(&entries.get_entry(cur_idx).await?),
+                                ),
+                            )
+                            .await?;
 
-                interaction
-                    .create_response(&ctx, CreateInteractionResponse::Acknowledge)
-                    .await?;
-            }
+                        interaction
+                            .create_response(&ctx, CreateInteractionResponse::Acknowledge)
+                            .await?;
+                    }
 
-            "delete" => {
-                interaction
-                    .create_response(&ctx, CreateInteractionResponse::Acknowledge)
-                    .await?;
+                    "delete" => {
+                        interaction
+                            .create_response(&ctx, CreateInteractionResponse::Acknowledge)
+                            .await?;
 
-                reply.delete(ctx).await?;
-                break;
-            }
-            "done" => {
-                interaction
-                    .create_response(&ctx, CreateInteractionResponse::Acknowledge)
-                    .await?;
+                        reply.delete(ctx).await?;
+                        break;
+                    }
+                    "done" => {
+                        interaction
+                            .create_response(&ctx, CreateInteractionResponse::Acknowledge)
+                            .await?;
 
-                reply.delete(ctx).await?;
+                        reply.delete(ctx).await?;
 
-                ctx.send(
-                    CreateReply::default().embed(
-                        ctx.data()
-                            .arcanum
-                            .embed_entry(&entries.get_entry(cur_idx).await?),
-                    ),
-                )
-                .await?;
+                        ctx.send(
+                            CreateReply::default().embed(
+                                ctx.data()
+                                    .arcanum
+                                    .embed_entry(&entries.get_entry(cur_idx).await?),
+                            ),
+                        )
+                        .await?;
 
-                break;
+                        break;
+                    }
+                    _ => {
+                        println!("Unhandled interaction: {}", kind);
+                    }
+                }
             }
             _ => {
-                println!("Unhandled interaction: {}", kind);
+                reply.delete(ctx).await?;
+                break;
             }
         }
     }
 
     Ok(())
 }
+
 #[poise::command(prefix_command, slash_command)]
 pub async fn random(ctx: Context<'_>) -> Result<()> {
     let entry = ctx.data().arcanum.random_entry().await?;

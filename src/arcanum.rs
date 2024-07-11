@@ -1,11 +1,9 @@
-use std::sync::Arc;
-
 use crate::util::Result;
 use html2md::parse_html;
 use itertools::Itertools;
 use reqwest::Url;
 use serde::Deserialize;
-use serenity::{builder::CreateEmbed, futures::future::BoxFuture};
+use serenity::builder::CreateEmbed;
 
 #[derive(Debug)]
 pub struct Arcanum {
@@ -170,15 +168,7 @@ impl Arcanum {
     }
 
     pub async fn search_entries(&self, terms: Vec<String>) -> Result<PaginatedSearch> {
-        // let load_page: impl Fn(usize) -> |idx: usize| async {
-        //
-
-        // let first_page = BoxFuture::new(load_page(1));
-        // let second_page = load_page(1).await?;
-        //
-        //
-        //
-        Ok(PaginatedSearch::new(self, terms).await?)
+        PaginatedSearch::new(self, terms).await
     }
 
     pub fn new(base_url: String, icon: String) -> Self {
@@ -204,6 +194,7 @@ impl<'a> PaginatedSearch<'a> {
     }
 
     pub async fn get_entry(&mut self, idx: usize) -> Result<Entry> {
+        // TODO: There should be a way to get around the .clone() here
         let page_idx = idx / 250;
         let pagination_idx = idx - 250 * page_idx;
 
@@ -221,7 +212,7 @@ impl<'a> PaginatedSearch<'a> {
 
     async fn load_page(
         arcanum: &'a Arcanum,
-        terms: &Vec<String>,
+        terms: &[String],
         page: usize,
     ) -> Result<PaginatedEntries> {
         arcanum
