@@ -11,9 +11,10 @@ mod arcanum;
 mod util;
 
 use ::serenity::all::ButtonStyle;
-use ::serenity::builder::{CreateActionRow, CreateButton};
+use ::serenity::builder::{CreateActionRow, CreateAllowedMentions, CreateButton};
 use ::serenity::builder::{CreateInteractionResponse, CreateMessage};
 use tokio::time::timeout;
+use util::send_deletable;
 use util::Result;
 
 struct Data {
@@ -30,7 +31,7 @@ pub async fn register(ctx: Context<'_>) -> Result<()> {
     Ok(())
 }
 
-#[poise::command(prefix_command, slash_command, subcommands("search", "random"))]
+#[poise::command(prefix_command, slash_command, subcommands("search", "random", "get"))]
 pub async fn wob(_ctx: Context<'_>) -> Result<()> {
     Ok(())
 }
@@ -157,16 +158,16 @@ pub async fn search(ctx: Context<'_>, terms: Vec<String>) -> Result<()> {
 
                         reply.delete(ctx).await?;
 
-                        ctx.channel_id()
-                            .send_message(
-                                ctx,
-                                CreateMessage::default().embed(
-                                    ctx.data()
-                                        .arcanum
-                                        .embed_entry(&entries.get_entry(cur_idx).await?),
-                                ),
-                            )
-                            .await?;
+                        let msg = CreateMessage::default()
+                            .content(format!("-# Searched by <@!{}>", ctx.author().id))
+                            .allowed_mentions(CreateAllowedMentions::default())
+                            .embed(
+                                ctx.data()
+                                    .arcanum
+                                    .embed_entry(&entries.get_entry(cur_idx).await?),
+                            );
+
+                        send_deletable(&ctx, msg).await?;
 
                         break;
                     }
@@ -182,6 +183,11 @@ pub async fn search(ctx: Context<'_>, terms: Vec<String>) -> Result<()> {
         }
     }
 
+    Ok(())
+}
+
+#[poise::command(prefix_command, slash_command)]
+pub async fn get(ctx: Context<'_>, id: String) -> Result<()> {
     Ok(())
 }
 
