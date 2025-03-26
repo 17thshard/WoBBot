@@ -49,7 +49,7 @@ fun TextChannel.sendRandomEmbed(requester: DiscordEntity, title: String, color: 
     val index = (Math.random() * embeds.size).toInt()
     val embed = embeds[index]
 
-    sendMessage(embed).setupDeletable(requester).setupControls(requester, index, embeds)
+    sendMessage(embed).setupDeletable(requester).setupControls(requester, index, false, embeds)
 }
 
 fun TextChannel.sendRandomEmbed(requester: DiscordEntity, title: String, messages: Array<Pair<String, Pair<String, Color>>>) {
@@ -58,7 +58,7 @@ fun TextChannel.sendRandomEmbed(requester: DiscordEntity, title: String, message
     val index = (Math.random() * embeds.size).toInt()
     val embed = embeds[index]
 
-    sendMessage(embed).setupDeletable(requester).setupControls(requester, index, embeds)
+    sendMessage(embed).setupDeletable(requester).setupControls(requester, index, false, embeds)
 }
 
 fun Message.sendMinorError(message: String) {

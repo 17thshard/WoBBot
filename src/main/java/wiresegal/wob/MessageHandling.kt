@@ -92,17 +92,25 @@ fun handleContent(message: Message, line: String) {
     }
 }
 
+fun findInSpoilers(content: String, str: String): Boolean {
+    val split = content.split("||")
+    val allTaggedText = split.filterIndexed { i, _ -> i % 2 == 1 && i < split.lastIndex }.joinToString()
+    return allTaggedText.contains(str)
+}
+
 @RegisterHandlers
 fun registerBuiltinHandlers() {
     addCommand(wobCommand) { content, trimmed, _, message ->
         if (trimmed == "!$wobCommand" || trimmed.startsWith("!$wobCommand?"))
             message.channel.sendMessage("Use `!$wobCommand \"term\"` to search, or put a link in to get its text directly.")
         else {
+            val shouldHide = findInSpoilers(message.content, content.split(" ", limit = 2)[0])
+            
             val allWobs = "#e(\\d+)".toRegex().findAll(content)
 
             for (wob in allWobs) async {
                 val theWob = entryFromId(wob.groupValues[1].toInt())
-                message.channel.sendMessage(embedFromContent("", theWob)).setupDeletable(message.author)
+                message.channel.sendMessage(embedFromContent("", theWob, shouldHide)).setupDeletable(message.author)
             }
 
             val terms = "[\"“]([\\w\\s,+!|&]+)[\"”]".toRegex().findAll(content).toList()
@@ -112,7 +120,7 @@ fun registerBuiltinHandlers() {
                                 .split("[\\s,]+".toRegex())
                     }.filter { it.matches("[!+|&\\w]+".toRegex()) }
             if (terms.any()) async {
-                searchWoB(message, terms)
+                searchWoB(message, terms, shouldHide)
             }
         }
     }
@@ -123,10 +131,12 @@ fun registerBuiltinHandlers() {
             if (wikiCommands.any { trimmed == "!$it" })
                 message.channel.sendMessage("Use `$trimmed \"term\"` to search.")
             else {
+                val shouldHide = findInSpoilers(message.content, content.split(" ", limit = 2)[0])
+                
                 val allPages = "coppermind\\.net/wiki/([A-Za-z0-9._/~%\\-+&#?!=()@]+)".toRegex(RegexOption.IGNORE_CASE).findAll(content)
 
                 if (allPages.any()) {
-                    retrieveCoppermindPages(message, allPages.map { it.groupValues[1] }.toList())
+                    retrieveCoppermindPages(message, allPages.map { it.groupValues[1] }.toList(), shouldHide)
                 }
 
                 val terms = "[\"“]([/\\w\\s,']+)[\"”]".toRegex().findAll(content).toList()
@@ -136,7 +146,7 @@ fun registerBuiltinHandlers() {
                         .map { it.toLowerCase().capitalize() }
 
                 if (terms.any()) async {
-                    searchCoppermind(message, terms)
+                    searchCoppermind(message, terms, shouldHide)
                 }
             }
         }

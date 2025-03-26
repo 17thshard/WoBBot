@@ -10,7 +10,9 @@ import wiresegal.wob.messageToAuthor
 import wiresegal.wob.messagesWithEmbedLists
 import wiresegal.wob.misc.util.BotRanks
 import wiresegal.wob.misc.util.checkPermissions
+import wiresegal.wob.misc.util.spoilerTag
 import wiresegal.wob.misc.util.toJsonNode
+import wiresegal.wob.arcanum.embedFromContent
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -30,12 +32,12 @@ const val no = "❌"
 val validReactions = listOf(arrowLeft, arrowRight, done, last, first, jumpLeft, jumpRight, no)
 
 fun updateMessageWithJump(jump: Int, message: Message, entry: EmbeddedInfo) {
-    val (uid, channel, index, embeds) = entry
+    val (uid, channel, index, shouldHide, embeds) = entry
     val newIndex = (index + jump).coerceIn(embeds.indices)
     if (index != newIndex) {
         val newEmbed = embeds[newIndex]
         message.edit(newEmbed)
-        messagesWithEmbedLists[message.id] = EmbeddedInfo(uid, channel, newIndex, embeds)
+        messagesWithEmbedLists[message.id] = EmbeddedInfo(uid, channel, newIndex, shouldHide, embeds)
     }
 }
 
@@ -55,10 +57,10 @@ fun Message.setupDeletable(id: Long): Message {
     return this
 }
 
-fun CompletableFuture<out Message>.setupControls(requester: DiscordEntity, index: Int, embeds: List<EmbedBuilder>): CompletableFuture<Message>
-        = then { it.setupControls(requester, index, embeds) }
+fun CompletableFuture<out Message>.setupControls(requester: DiscordEntity, index: Int, shouldHide: Boolean = false, embeds: List<EmbedBuilder>): CompletableFuture<Message>
+        = then { it.setupControls(requester, index, shouldHide, embeds) }
 
-fun Message.setupControls(requester: DiscordEntity, index: Int, embeds: List<EmbedBuilder>): Message {
+fun Message.setupControls(requester: DiscordEntity, index: Int, shouldHide: Boolean = false, embeds: List<EmbedBuilder>): Message {
     if (embeds.size > 2)
         addReaction(first)
     if (embeds.size > 10)
@@ -71,13 +73,13 @@ fun Message.setupControls(requester: DiscordEntity, index: Int, embeds: List<Emb
     if (embeds.size > 2)
         addReaction(last)
 
-    messagesWithEmbedLists[id] = EmbeddedInfo(requester.id, channel.id, index, embeds)
+    messagesWithEmbedLists[id] = EmbeddedInfo(requester.id, channel.id, index, shouldHide, embeds)
     return this
 }
 
-fun Message.finalizeMessage(uid: Long) {
+fun Message.finalizeMessage(uid: Long, shouldHide: Boolean = false) {
     val finalEmbed = embeds.first().toBuilder()
-    finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
+    finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n|\\|\\|".toRegex(), "").spoilerTag(shouldHide))
     edit(finalEmbed)
     messagesWithEmbedLists.remove(id)
     removeAllReactions().whenComplete { _, _ -> setupDeletable(uid) }
@@ -98,7 +100,7 @@ fun actOnReaction(it: ReactionAddEvent) {
                     } else {
                         val messageValue = messagesWithEmbedLists[message.id]
                         if (messageValue != null) {
-                            val (uid, _, _, embeds) = messageValue
+                            val (uid, _, _, shouldHide, embeds) = messageValue
                             if (user.checkPermissions(uid, message.channel, BotRanks.USER)) {
                                 when (unicode) {
                                     arrowLeft -> updateMessageWithJump(-1, message, messageValue)
@@ -107,7 +109,7 @@ fun actOnReaction(it: ReactionAddEvent) {
                                     arrowRight -> updateMessageWithJump(1, message, messageValue)
                                     jumpRight -> updateMessageWithJump(10, message, messageValue)
                                     last -> updateMessageWithJump(embeds.size, message, messageValue)
-                                    done -> message.finalizeMessage(uid)
+                                    done -> message.finalizeMessage(uid, shouldHide)
                                 }
                             }
                             it.removeReaction()

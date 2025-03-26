@@ -16,6 +16,7 @@ import wiresegal.wob.misc.setupControls
 import wiresegal.wob.misc.setupDeletable
 import wiresegal.wob.misc.then
 import wiresegal.wob.misc.util.FakeEmbedBuilder
+import wiresegal.wob.misc.util.spoilerTag
 import wiresegal.wob.misc.util.toJsonNode
 import wiresegal.wob.plugin.sendError
 import wiresegal.wob.plugin.sendMinorError
@@ -28,14 +29,14 @@ import java.time.Instant
  * Created at 11:40 PM on 2/15/18.
  */
 
-const val EMBED_LIMIT = 6000
-const val TITLE_LIMIT = 256
-const val DESCRIPTION_LIMIT = 2048
-const val FIELDS_LIMIT = 25
-const val FIELD_NAME_LIMIT = 256
-const val FIELD_TEXT_LIMIT = 1024
-const val FOOTER_LIMIT = 2048
-const val MESSAGE_LIMIT = 2000
+const val EMBED_LIMIT = 6000 - 4
+const val TITLE_LIMIT = 256 - 4
+const val DESCRIPTION_LIMIT = 2048 - 4
+const val FIELDS_LIMIT = 25 - 4
+const val FIELD_NAME_LIMIT = 256 - 4
+const val FIELD_TEXT_LIMIT = 1024 - 4
+const val FOOTER_LIMIT = 2048 - 4
+const val MESSAGE_LIMIT = 2000 - 4
 
 fun String.capWithSuffix(len: Int, suffix: String): String {
     if (length <= len)
@@ -43,14 +44,14 @@ fun String.capWithSuffix(len: Int, suffix: String): String {
     return substring(0, len - suffix.length).replace("\\w+$".toRegex(), "").trim() + suffix
 }
 
-fun embedFromContent(titlePrefix: String, entry: Entry): EmbedBuilder {
+fun embedFromContent(titlePrefix: String, entry: Entry, shouldHide: Boolean = false): EmbedBuilder {
     val date = entry.date.split("-")
     val dateStr = if (date.size >= 3) {
         "(${months[date[1].toInt() - 1]} ${date[2].removePrefix("0")}, ${date[0]})"
     } else
         entry.date
 
-    val title = (titlePrefix + entry.eventName + " " + dateStr).take(TITLE_LIMIT)
+    val title = (titlePrefix + entry.eventName + " " + dateStr).take(TITLE_LIMIT).spoilerTag(shouldHide)
 
     val embed = EmbedBuilder()
             .setColor(embedColor)
@@ -65,18 +66,18 @@ fun embedFromContent(titlePrefix: String, entry: Entry): EmbedBuilder {
     if (entry.eventState == ReviewState.APPROVED) flags.add("_Approved_")
 
     if (flags.isNotEmpty())
-        embed.setDescription("**" + flags.joinToString().take(DESCRIPTION_LIMIT - 4) + "**")
+        embed.setDescription("**" + flags.joinToString().take(DESCRIPTION_LIMIT - 4).spoilerTag(shouldHide) + "**")
 
     val arcanumSuffix = "*… (Check Arcanum for more.)*"
 
     if (entry.note != null && entry.note.isNotBlank())
         embed.setFooter(("Footnote: " + entry.getFooterText())
-                .capWithSuffix(FOOTER_LIMIT, arcanumSuffix))
+                .capWithSuffix(FOOTER_LIMIT, arcanumSuffix).spoilerTag(shouldHide))
 
     for ((speaker, comment) in entry.lines.take(FIELDS_LIMIT)
             .map {
-                it.getTrueSpeaker().run { if (isEmpty()) "Context" else this }.take(FIELD_NAME_LIMIT) to
-                        it.getTrueText().capWithSuffix(FIELD_TEXT_LIMIT, arcanumSuffix)
+                it.getTrueSpeaker().run { if (isEmpty()) "Context" else this }.take(FIELD_NAME_LIMIT).spoilerTag(shouldHide) to
+                        it.getTrueText().capWithSuffix(FIELD_TEXT_LIMIT, arcanumSuffix).spoilerTag(shouldHide)
             }) {
         val oldJson = embed.toJsonNode()
         embed.addField(speaker, comment, false)
@@ -109,7 +110,7 @@ val months = listOf("Jan.", "Feb.", "March", "April",
         "May", "June", "July", "Aug.",
         "Sept.", "Oct.", "Nov.", "Dec.")
 
-fun harvestFromSearch(terms: List<String>): List<EmbedBuilder> {
+fun harvestFromSearch(terms: List<String>, shouldHide: Boolean = false): List<EmbedBuilder> {
     val (allArticles, large) = entriesFromSearch(terms)
     val allEmbeds = mutableListOf<EmbedBuilder>()
 
@@ -117,22 +118,22 @@ fun harvestFromSearch(terms: List<String>): List<EmbedBuilder> {
 
     for ((idx, article) in allArticles.withIndex()) {
         val titleText = "Search: \"${terms.joinToString()}\" (${idx + 1}/$size) \n"
-        allEmbeds.add(embedFromContent(titleText, article))
+        allEmbeds.add(embedFromContent(titleText, article, shouldHide))
     }
 
     return allEmbeds
 }
 
-fun searchWoB(message: Message, terms: List<String>) {
+fun searchWoB(message: Message, terms: List<String>, shouldHide: Boolean = false) {
     var type = AutoCloseable {}
-    message.channel.sendMessage("Searching for \"${terms.joinToString(" ")}\"...").then {
+    message.channel.sendMessage("Searching for \"${terms.joinToString(" ").spoilerTag(shouldHide)}\"...").then {
         type = message.channel.typeContinuously()
-        val allEmbeds = harvestFromSearch(terms)
+        val allEmbeds = harvestFromSearch(terms, shouldHide)
 
         type.close()
 
         when {
-            allEmbeds.isEmpty() -> message.channel.sendMessage("Couldn't find any entries for \"${terms.joinToString().replace("&!", "!")}\".")
+            allEmbeds.isEmpty() -> message.channel.sendMessage("Couldn't find any entries for \"${terms.joinToString().replace("&!", "!").spoilerTag(shouldHide)}\".")
             allEmbeds.size == 1 -> {
                 val finalEmbed = allEmbeds.first()
                 finalEmbed.setTitle(finalEmbed.toJsonNode()["title"].asText().replace(".*\n".toRegex(), ""))
@@ -141,7 +142,7 @@ fun searchWoB(message: Message, terms: List<String>) {
             else ->
                 message.channel.sendMessage(allEmbeds.first())
                         .then { type.close() }
-                        .setupDeletable(message.author).setupControls(message.author, 0, allEmbeds)
+                        .setupDeletable(message.author).setupControls(message.author, 0, shouldHide, allEmbeds)
         }
         if (it.channel !is PrivateChannel)
             it.delete()
