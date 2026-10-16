@@ -1,5 +1,11 @@
+# MacOS resource forks
 .DS_Store
+
+# IntelliJ Idea
 .idea/
 target/
 *.iml
-dependency-reduced-pom.xml
+
+# Gradle
+.gradle/
+build/

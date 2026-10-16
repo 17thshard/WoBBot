@@ -1,27 +1,29 @@
 # WoBBot [![Build Status](https://travis-ci.org/Palanaeum/WoBBot.svg?branch=master)](https://travis-ci.org/Palanaeum/WoBBot)
-A discord bot which fetches Words of Brandon from Arcanum.
+A Discord bot which fetches entries from a Palanaeum archive (by default, [Arcanum](https://wob.coppermind.net)).
 
-To run this bot: `env DISCORD_TOKEN=<TOKEN> [ARCANUM_TOKEN=<TOKEN>] mvn exec:java`
+To run this bot: `env DISCORD_TOKEN=<TOKEN> ./gradlew run`
 
-This bot requires the `Manage Messages` permission to control reactions. To grant this in your invite link: 
-`https://discordapp.com/oauth2/authorize?&client_id=<CLID>&scope=bot&permissions=8192`
-
-Alternatively, invoke `!wobabout` to get an invite link.
+> [!IMPORTANT]
+> At the moment, the slash command-based rewrite only supports Palanaeum commands. The rest will be restored over time.
 
 ## Configuration
 
 Additional environment variables can be used to configure the bot's various aspects.
 
-| Name | Default | What? |
-| ---- | ------- | ----- |
-| DISCORD_TOKEN | n/a; Required variable | Discord token to connect to the bot |
-| ARCANUM_TOKEN | | Token for unlimited API calls to the archive |
-| BRANDONSANDERSON_URL | | The homepage URL to extract progress information |
-| ARCANUM_URL | https://wob.coppermind.net | The base URL for API interactions |
-| WIKI_URL | coppermind.net | The wiki URL |
-| WIKI_COMMAND | coppermind|cm | The wiki interaction command |
-| WOB_COMMAND | wob | The WoB interaction command |
-| ARCANUM_ICON | ![](https://cdn.discordapp.com/emojis/373082865073913859.png?v=1) | The URL of the Icon to use for archive responses |
-| WIKI_ICON | ![](https://cdn.discordapp.com/emojis/432391749550342145.png?v=1) | The URL of the Icon to use for wiki responses |
-| ARCANUM_COLOR | ![#003A52](https://via.placeholder.com/15/003A52/000000?text=+) | The color to use in the WoB interactions |
-| WIKI_COLOR | ![#CB6D51](https://via.placeholder.com/15/CB6D51/000000?text=+) | The color to use in the Wiki interactions |
+| Name          | Default                                                           | What?                                                                        |
+|---------------|-------------------------------------------------------------------|------------------------------------------------------------------------------|
+| DISCORD_TOKEN | n/a; Required variable                                            | Discord token to connect to the bot                                          |
+| TEST_GUILD    |                                                                   | If present, the bot will add commands to this guild instead of globally.[^1] |
+| ARCANUM_TOKEN |                                                                   | Token for unlimited API calls to the Palanaeum archive                       |
+| WOB_COMMAND   | wob                                                               | Archive interaction command                                                  |
+| ARCANUM_URL   | https://wob.coppermind.net                                        | Base URL for the Palanaeum archive instance                                  |
+| ARCANUM_ICON  | ![](https://cdn.discordapp.com/emojis/373082865073913859.png?v=1) | URL of icon to use in archive responses                                      |
+| ARCANUM_COLOR | ![#003A52](https://via.placeholder.com/15/003A52/000000?text=+)   | Color to use in archive interactions                                         |
+| ARCANUM_NAME  | Arcanum                                                           | Name to use in archive command descriptions                                  |
+| WIKI_COMMAND  | cm                                                                | Wiki interaction command                                                     |
+| WIKI_URL      | coppermind.net                                                    | Domain for the MediaWiki wiki instance                                       |
+| WIKI_ICON     | ![](https://cdn.discordapp.com/emojis/432391749550342145.png?v=1) | URL of icon to use in wiki responses                                         |
+| WIKI_COLOR    | ![#CB6D51](https://via.placeholder.com/15/CB6D51/000000?text=+)   | Color to use in wiki interactions                                            |
+| WIKI_NAME     | Coppermind                                                        | Name to use in wiki command descriptions                                     |
+
+[^1]: Global commands can take some time to propagate, while guild commands update instantly, so this makes for a faster testing loop.
